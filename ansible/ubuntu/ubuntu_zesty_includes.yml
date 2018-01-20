@@ -1,0 +1,21 @@
+ - name: Ensure /etc/systemd/resolved.conf.d dir exists
+      become: yes
+      become_method: sudo
+      file: path=/etc/systemd/resolved.conf.d state=directory
+
+    - name: Create dns resolver files at /etc/systemd/resolved.conf.d/
+      become: yes
+      become_method: sudo
+      template:
+        src: "{{ kdev_env_dir }}/ansible/ubuntu/ubuntu_resolvd.conf"
+        dest: "/etc/systemd/resolved.conf.d/{{item.domain}}.conf"
+        force: yes
+      with_items:
+        - { ip: "{{ machine_ip }}", domain: test }
+
+    - name: Restart systemd-resolved
+      become: yes
+      become_method: sudo
+      service:
+        name: systemd-resolved
+        state: restarted

@@ -1,0 +1,543 @@
+#!/usr/bin/env ruby
+require 'open3'
+require 'yaml'
+require 'json'
+
+class DevTool
+  MAIN_HELP_BANNER = <<HEREDOC
+Execute various commands within the developer environment
+Usage:
+  kdev [options] [COMMAND] [ARGS...]"
+  kdev -h|--help
+Options:
+  --verbose                 Show more output
+  -v, --version             Print version and exit
+Commands:
+  build              Build or rebuild services
+  cleanup            Deletes docker containers, images and volumes
+  create             Create new project
+  exec               Run command inside web container
+  help               Get help on a command
+  kill               Kill containers
+  logs               View output from containers
+  ps                 List containers
+  pull               Pulls service images
+  restart            Restart services
+  reload             Force recreates all services
+  rm                 Remove stopped containers
+  run                Run a one-off command
+  shell              Open shell inside container
+  service            Manage gdev services (nginx and dnsmasq, mail)
+  start              Start services
+  stop               Stop services
+  up                 Create and start containers
+  update             Update gdev environment
+HEREDOC
+
+  PROXY_UNMODIFIED_TO_COMPOSE=%w{build kill logs ps pull restart rm start}
+  PROXY_MODIFIED=%w{up run help stop}
+  OTHER_COMMANDS=%w{wait reload cleanup machine update service status shell exec create}
+
+  CREATE_HELP='Usage: $ kdev create --type=wordpress --theme=ssh://git@domain:/theme.git --sitename=myapp --git=ssh://git@mydomain:/my-app.git'
+
+  def initialize(args)
+    if PROXY_UNMODIFIED_TO_COMPOSE.include?(args[0])
+      system(args.unshift("docker-compose").join(" "))
+    elsif PROXY_MODIFIED.include?(args[0])
+      send(args[0].to_sym, args)
+    elsif OTHER_COMMANDS.include?(args[0])
+      send(args.shift.to_sym, args)
+    else
+      puts MAIN_HELP_BANNER
+    end
+  end
+
+  # Show docker-compose command helpers for original commands
+  def help(args)
+    if args.size > 1
+      if (PROXY_UNMODIFIED_TO_COMPOSE.include?(args[1]) or PROXY_MODIFIED.include?(args[1]))
+        args.unshift("docker-compose")
+        system(args.join(" "))
+      elsif OTHER_COMMANDS.include?(args[1])
+        puts("This is a kdev custom command and not part of docker-compose. See wiki for explanation.")
+      end
+    else
+      puts MAIN_HELP_BANNER
+    end
+  end
+
+  def stop(args)
+    if RUBY_PLATFORM.include? "darwin"
+      # Stop Docker-Sync
+      system("docker-sync stop")
+    end
+
+    args.unshift("docker-compose")
+    system(args.join(" "))
+  end
+
+  def run(args)
+    args.insert(1, "--rm")
+    args.unshift("docker-compose")
+    system(args.join(" "))
+  end
+
+  def reload(args)
+    service(["up"])
+
+    args.unshift("-d")
+    args.unshift("--force-recreate")
+    args.unshift("up")
+    args.unshift("docker-compose")
+
+    system(args.join(" "))
+
+  end
+
+  def cleanup(args)
+
+    if args.include?('--images')
+
+        puts "Removing all unused docker images..."
+        images = `docker images -q`.gsub("\n",' ')
+
+        system "docker rmi #{images}" if $?.success? and not images.empty?
+
+    elsif args.empty?
+
+        puts "Removing exited docker containers..."
+
+        containers = `docker ps -a -q -f status=exited`.gsub("\n",' ')
+
+        system "docker rm -v #{containers}" if $?.success? and not containers.empty?
+
+        puts "Removing dangling docker images..."
+
+        images = `docker images -f 'dangling=true' -q`.gsub("\n",' ')
+
+        system "docker rmi #{images}" if $?.success? and not images.empty?
+
+        puts "Removing dangling docker volumes..."
+
+        volumes = `docker volume ls -qf dangling=true`.gsub("\n",' ')
+
+        system "docker volume rm #{volumes}" if $?.success? and not volumes.empty?
+
+    end
+
+  end
+
+  def up(args)
+    service(["up"])
+    if RUBY_PLATFORM.include? "darwin"
+      # Start Docker-Sync
+      system("docker-sync start")
+    end
+
+    args.insert(1, "-d")
+    args.unshift("docker-compose")
+    system(args.join(" "))
+  end
+
+  # open shell into container, default to web and bash
+  def shell(args)
+    if(!args[0])
+        target = 'web'
+        to = 'bash'
+    else
+        target = args[0]
+        to = args[1]
+    end
+    container=`docker-compose ps -q #{target}`.strip
+    system("docker exec -it #{container} #{to}")
+  end
+
+  # Run command in web container
+  def exec(args)
+    container=`docker-compose ps -q web`.strip
+    system "docker exec -it #{container} #{args.join(' ')}"
+  end
+
+  # Updating is just running bootstrap again with newer bootstrap bin
+  def update(args)
+    if (args[0] == "dns")
+
+      if RUBY_PLATFORM.include? "linux"
+        system('ansible-playbook /usr/local/kdev-env/ansible/ubuntu.yml -i 127.0.0.1, --ask-become-pass --verbose --tags=dns')
+      else
+        system('ansible-playbook /usr/local/kdev-env/ansible/mac.yml -i 127.0.0.1, --ask-become-pass --verbose --tags=dns')
+      end
+
+    elsif (args[0].nil?)
+
+      if RUBY_PLATFORM.include? "linux"
+        system('cd /usr/local/kdev-env && git reset HEAD --hard && git pull origin HEAD && bin/ubuntu')
+      else
+        system('cd /usr/local/kdev-env && git reset HEAD --hard && git pull origin HEAD && bin/bootstrap')
+      end
+      # Rebuild and reload all services
+      puts "Refreshing all kdev services..."
+      service(['build nginx'])
+      service(['reload'])
+
+    else
+      puts "Did you mean to run: $ kdev update ?"
+    end
+  end
+
+  def service(args)
+    if (args[0] == "reload")
+      args[0] = "up"
+      args.push("--force-recreate")
+    end
+    if (args[0] == "up")
+      args.push("-d")
+    elsif (args[0].nil?)
+      no_command_given = true
+    end
+    args.unshift("docker-compose", "-f /usr/local/kdev-env/docker/services.yml", "-p kdev")
+
+    #If linux, set ip, otherwise assume user is on mac os x
+    if RUBY_PLATFORM.include? "linux"
+      box_ip="172.17.0.1"
+    else
+      box_ip="10.254.254.254"
+    end
+    # Set system variables which we can use in our templates
+    system({"BOX_IP" => box_ip},args.join(" "))
+
+    # Tell about custom commands if help view was shown
+    if (no_command_given)
+      puts "  reload             Force updates all service containers"
+    end
+  end
+
+  # Syntactic sugar for: $ gdev ps
+  # I want this to look like vagrant binary
+  def status(args)
+    system("docker-compose ps")
+  end
+
+  # Create new project command (validate arguments and start creating app or use wizard)
+  def create(args)
+    # validate arguments
+
+    # got arguments
+    unless args.empty?
+      # TODO: parse_args method
+      required_args = ['sitename', 'type']
+      # loop given arguments
+      used_args = []
+      args_hash = Hash.new
+      args.each { |argument|
+        arg = argument.split('=')
+        if arg.length == 2
+          # every argument has value, check for required args
+
+          # split argument to key value pair
+          key = arg[0]
+          val = arg[1]
+
+          # remove all dashes from beginning of key
+          key.sub! /\A-+/, ''
+          # check for duplicate arguments
+          if used_args.include?(key)
+            puts "Duplicate arguments"
+            puts CREATE_HELP
+            exit
+          else
+            # keep track of used arguments
+            used_args.push(key)
+
+            # TODO: validate sitename (only lowercase chars, dashes or numbers)
+
+            # set key and value to hash
+            args_hash[key]=val
+          end
+
+          if required_args.include?(key)
+            required_args.delete(key)
+          end
+
+        else
+          # argument value missing, exit script and show help
+          puts 'Argument '+arg[0]+' needs value'
+          puts CREATE_HELP
+          exit
+        end
+      }
+
+      if required_args.length == 0
+        # all required arguments given, proceed
+      else
+        # required arguments missing, exit script and show help
+        puts "Arguments required:"
+        puts required_args
+        puts CREATE_HELP
+        exit
+      end
+
+      # start creating project
+      create_app(args_hash)
+
+    else
+      # no arguments given, start wizard
+      create_wizard()
+
+    end
+
+  end
+
+  # Create new site
+  def create_app(args)
+
+    unless validate_string(args['sitename'])
+      puts "Sitename not valid."
+      puts CREATE_HELP
+      exit
+    end
+
+    puts "Creating project "+args['sitename']+"..."
+
+    #puts args.inspect
+
+    themename=args['sitename'].tr('-','');
+
+    case args['type']
+    when "wordpress"
+      # setup wordpress project
+      # check if project directory already exists
+      unless Dir.exists?(args['sitename'])
+        # clone wp-project from github
+        puts "Cloning wp-project from git@github.com:alexsancho/wp-project.git to #{args['sitename']}..."
+        puts `git clone git@github.com:alexsancho/wp-project.git #{args['sitename']}`
+        if args['theme']
+          puts "Cloning theme from #{args['theme']}..."
+          puts `git clone #{args['theme']} #{args['sitename']}/web/app/themes/#{themename}`
+          puts "Removing .git directory from theme..."
+          `rm -rf #{args['sitename']}/web/app/themes/#{themename}/.git`
+          puts ""
+        else
+          # TODO: get default theme url from ~/.kdev/kdevconf.yml
+          # do not get theme if default is not set
+          puts "TODO"
+          puts "Cloning default theme if set ~/.kdev/kdevconf.yml"
+        end
+        # replace all THEMENAME (namespace) references from all files from this project to your project name
+        puts "Replacing 'THEMENAME' strings from all project files with '#{args['sitename']}'..."
+        themename_file_names = [
+          "#{args['sitename']}/.drone.yml",
+          "#{args['sitename']}/config/application.php",
+          "#{args['sitename']}/docker-compose.yml",
+          "#{args['sitename']}/web/app/themes/#{themename}/lib/extras.php",
+          "#{args['sitename']}/web/app/themes/#{themename}/lib/images.php",
+          "#{args['sitename']}/web/app/themes/#{themename}/lib/setup.php",
+          "#{args['sitename']}/web/app/themes/#{themename}/package.json",
+          "#{args['sitename']}/web/app/themes/#{themename}/style.css"
+        ]
+
+        themename_file_names.each do |file_name|
+          if File.exists?(file_name)
+            text = File.read(file_name)
+            # remove dashes from namespace strings
+            new_contents = text.gsub(/THEMENAME/, "#{args['sitename'].tr('-','')}")
+            File.open(file_name, "w") {|file| file.puts new_contents }
+          end
+        end
+
+        # replace PROJECTNAME references
+        puts "Replacing 'PROJECTNAME' strings with '#{args['sitename']}'..."
+        projectname_file_names = [
+          "#{args['sitename']}/docker-compose.yml"
+        ]
+        # Add one additional replace to the array.
+        if RUBY_PLATFORM.include? "darwin"
+          projectname_file_names.insert(-1, "#{args['sitename']}/docker-sync.yml")
+        end
+        projectname_file_names.each do |file_name|
+          if File.exists?(file_name)
+            text = File.read(file_name)
+            new_contents = text.gsub(/PROJECTNAME/, "#{args['sitename']}")
+            File.open(file_name, "w") {|file| file.puts new_contents }
+          end
+        end
+
+        puts "Replacing 'themename-textdomain' strings from all project files with '#{args['sitename'].downcase}-td'..."
+        textdomain_file_names = [
+          "#{args['sitename']}/web/app/themes/#{themename}/lib/setup.php",
+          "#{args['sitename']}/web/app/themes/#{themename}/style.css"
+        ]
+        textdomain_file_names.each do |file_name|
+          if File.exists?(file_name)
+            text = File.read(file_name)
+            new_contents = text.gsub(/themename-textdomain/, "#{args['sitename'].downcase}-td")
+            File.open(file_name, "w") {|file| file.puts new_contents }
+          end
+        end
+        puts "Replacing 'wordpress.local' strings from all project files with '#{args['sitename'].downcase}.local'..."
+        wordpresstest_file_names = [
+          "#{args['sitename']}/.drone.yml",
+          "#{args['sitename']}/docker-compose.yml",
+          "#{args['sitename']}/scripts/seed.sh"
+        ]
+        wordpresstest_file_names.each do |file_name|
+          if File.exists?(file_name)
+            text = File.read(file_name)
+            new_contents = text.gsub(/wordpress.local/, "#{args['sitename'].downcase}.local")
+            File.open(file_name, "w") {|file| file.puts new_contents }
+          end
+        end
+
+        # change project test address in docker-compose.yml for example wordpress.local -> client-name.local
+        #docker_compose = File.read("#{args['sitename']}/docker-compose.yml")
+        #docker_compose_replace = docker_compose.gsub(/wordpress.local/, "#{args['sitename']}.local")
+        #File.open("#{args['sitename']}/docker-compose.yml", "w") {|file| file.puts docker_compose_replace }
+
+        # TODO: Add all people working in the project into authors section of composer.json and rename the project alexsancho/wp-project->alexsancho/client in composer.json
+
+        # composer install
+        #puts "Running composer install..."
+        #puts `cd #{args["sitename"]}; composer install`
+        puts "Running composer update..."
+        puts `cd #{args["sitename"]}; composer update`
+
+        # install theme npm modules
+        if args['npm_install']
+          puts "Installing theme node modules..."
+          puts `cd #{args["sitename"]}/web/app/themes/#{themename}; npm install`
+          puts ""
+        end
+
+        # set git repository
+        if args['git'] == ""
+          puts "NO GIT REPOSITORY GIVEN!"
+        puts `cd #{args["sitename"]}; git remote rm origin`
+        else
+          puts "Changing git remote to #{args['git']}..."
+          puts `cd #{args["sitename"]}; git remote set-url origin #{args["git"]}`
+        end
+        puts ""
+
+        # gdev up
+        puts "Running kdev up..."
+        puts `cd #{args["sitename"]}; kdev up`
+        puts ""
+
+        # running seed
+        if args['run_seed']
+          puts "Waiting for 10 seconds to be sure that docker instances are up and running..."
+          sleep(10)
+          puts ""
+          puts "Running seed (Installing WordPress)..."
+          puts `cd #{args["sitename"]}; kdev exec scripts/seed.sh`
+          puts ""
+        end
+
+        puts "Point your browser to https://#{args['sitename'].downcase}.test/wp-admin and log in"
+      else
+        puts "Directory "+args['sitename'].downcase+" exists, please use another sitename."
+        puts CREATE_HELP
+
+        exit
+      end
+
+    else
+      puts "Type "+args['type']+" not supported."
+    end
+
+  end
+
+  # validate string (alphanumeric chars and -)
+  def validate_string(string)
+    !string.match(/\A[-a-zA-Z0-9]*\z/).nil?
+  end
+
+  def get_defaults(type)
+    defaults = Hash.new
+    if File.exist?(ENV['HOME']+'/.kdev/kdevconf.yml')
+      config = YAML.load(File.read(ENV['HOME']+"/.kdev/kdevconf.yml"))
+      defaults = config['create']['defaults'][type]
+    end
+    return defaults
+  end
+
+  def create_wizard()
+    # load default values
+    defaults = get_defaults('wordpress')
+    default_marker = "[default]"
+    project = Hash.new
+    puts "----------------------= Create new project =---------------------"
+
+    puts "Sitename (CamelCase alphanumeric string, dashes allowed):"
+    project['sitename']=gets.chomp
+    unless validate_string(project['sitename'])
+      puts "Sitename (CamelCase alphanumeric string, dashes allowed):"
+      project['sitename']=gets.chomp
+    end
+    puts ""
+    puts "Project type (wordpress"+default_marker+"):"
+    project['type']=gets.chomp
+    # wordpress specific settings
+    if ['','wordpress'].include?(project['type'])
+      # show selected default value
+      if project['type'] == ""
+        project['type']="wordpress"
+        puts "wordpress"
+      end
+      puts ""
+      if (defaults['theme'])
+        puts "Theme repository address ("+defaults['theme']+default_marker+"):"
+      else
+        puts "Theme repository address (git@domain/theme.git):"
+      end
+      project['theme']=gets.chomp
+      if project['theme'] == '' and defaults['theme']
+        project['theme']=defaults['theme']
+        puts defaults['theme']
+      else
+      end
+      puts ""
+    end
+    # run npm install in theme directory?
+    # TODO: default value
+    puts "Run npm install in theme directory after setup? (Y/N)"
+    npm_install=gets.chomp
+    if ['Y','y'].include?(npm_install)
+      project['npm_install']=true
+    else
+      project['npm_install']=false
+    end
+    puts ""
+    # run seed after setup?
+    puts "Run seed after installation? (Y/N)"
+    run_seed=gets.chomp
+    if ['Y','y'].include?(run_seed)
+      project['run_seed']=true
+    else
+      project['run_seed']=false
+    end
+    puts ""
+
+    puts "Project git repository, ssh or https (ssh://git@domain/my-app.git):"
+    project['git']=gets.chomp
+
+    puts ""
+    puts "------------------------= Confirm input =------------------------"
+    project.each { |key,val|
+      puts key+": "+val.to_s
+    }
+    puts "-----= Enter Y to create project, something else to cancel =-----"
+    puts ""
+    confirm = gets.chomp
+    puts ""
+    if ['Y','y'].include?(confirm)
+      create_app(project)
+    else
+      puts "Cancelled."
+    end
+
+    exit
+  end
+end
+
+DevTool.new(ARGV) if __FILE__==$0

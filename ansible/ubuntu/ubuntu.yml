@@ -1,0 +1,102 @@
+---
+- hosts: 127.0.0.1
+  connection: local
+
+  vars:
+    kdev_env_dir: "/usr/local/kdev-env"
+    kdev_user_files: "{{ansible_env.HOME}}/.kdev"
+    machine_ip: 172.17.0.1
+    compose_version: 1.15.0
+
+  tasks:
+
+    - name: Install ruby
+      become: yes
+      become_method: sudo
+      apt:
+        name: ruby
+        state: latest
+
+    - name: "Add Docker key"
+      become: yes
+      become_method: sudo
+      apt_key:
+        url: "https://download.docker.com/linux/ubuntu/gpg"
+        state: present
+
+    - name: "Add Docker repository"
+      become: yes
+      become_method: sudo
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ansible_distribution_release}} stable"
+        state: present
+
+    - name: Install Docker
+      become: yes
+      become_method: sudo
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: yes
+
+    - name: Install Docker Compose
+      become: yes
+      become_method: sudo
+      shell: "curl -L https://github.com/docker/compose/releases/download/{{ compose_version }}/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose"
+
+    - name: Create kdev directory
+      file:
+        path: "{{ansible_env.HOME}}/.kdev"
+        state: directory
+        owner: "{{ansible_env.USER}}"
+        group: "staff"
+        recurse: yes
+        mode: 0755
+      # If this was somehow root owned make sure it's not anymore
+      become: yes
+      become_method: sudo
+
+    - name: Symlink kdev bin to PATH
+      become: yes
+      become_method: sudo
+      file:
+        src: "{{kdev_env_dir}}/bin/kdev"
+        dest: /usr/local/bin/kdev
+        state: link
+        force: yes
+      tags: ['pre-install']
+
+    - name: Add user to docker group
+      user:
+        name: "{{ansible_env.USER}}"
+        groups: docker
+        append: yes
+      become: yes
+      become_method: sudo
+
+    - name: Start Docker if it is not running
+      become: yes
+      become_method: sudo
+      service:
+        name: docker
+        state: started
+
+    - name: Start kdev services
+      shell: "sg docker -c '{{ kdev_env_dir }}/bin/kdev service up'"
+
+    - name: Wait for signaler to create CA file
+      wait_for:
+        path: "{{ kdev_user_files }}/ca/ca.crt"
+        state: present
+        timeout: 30
+
+    # We want to use https locally and you only use ca.key which is generated to you
+    - name: Trust self-generated signaler Root certificate in keychain
+      shell: "cp ca.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates"
+      args:
+        chdir: "{{ kdev_user_files }}/ca/"
+      become: yes
+      become_method: sudo
+
+    - name: Include the rest of the tasks according to your Ubuntu version
+      include: "ubuntu_{{ansible_distribution_release}}_includes.yml"

@@ -1,0 +1,145 @@
+---
+- hosts: 127.0.0.1
+  connection: local
+
+  vars:
+    kdev_env_dir: /usr/local/kdev-env
+    kdev_user_files: "{{ansible_env.HOME}}/.kdev"
+
+    # This is alias for localhost loopback so that containers can connect to software running in osx ports
+    kdev_docker_host_ip: 10.254.254.254
+
+  tasks:
+    - name: Install Docker for Mac
+      homebrew_cask: name=docker state=present
+
+    # Commented out because of the new sync and it's probably not needed anymore. 11.8.2017 -Miika
+    # - name: Install Unison
+    #   homebrew: name=unison state=present
+
+    - name: Install python
+      homebrew: name=python state=present
+
+    - name: Check that pip is installed
+      stat: path=/usr/local/bin/pip
+      register: pip_installed
+
+    - name: Install pip
+      easy_install: name=pip state=latest
+      become: yes
+      when: not pip_installed.stat.exists
+
+    - name: Check kdev-env directory permissions
+      file:
+        path: "{{kdev_env_dir}}"
+        state: directory
+        owner: "{{ansible_env.USER}}"
+        group: "staff"
+        recurse: yes
+        mode: 0755
+      # If this was somehow root owned make sure it's not anymore
+      become: yes
+
+    - name: Create kdev directory
+      file:
+        path: "{{ansible_env.HOME}}/.kdev"
+        state: directory
+        owner: "{{ansible_env.USER}}"
+        group: "staff"
+        recurse: yes
+        mode: 0755
+      # If this was somehow root owned make sure it's not anymore
+      become: yes
+
+    - name: Symlink kdev bin to PATH
+      file:
+        src: "{{kdev_env_dir}}/bin/kdev"
+        dest: /usr/local/bin/kdev
+        state: link
+      tags: ['pre-install']
+
+    - name: Check that host ip looback is running
+      command: "ifconfig lo0 alias 10.254.254.254"
+      become: yes
+
+    - name: Ensure host ip looback after reboots
+      template:
+        src: templates/com.kdev.docker_ip_alias.plist.j2
+        dest: /Library/LaunchDaemons/com.kdev.docker_loopback_alias.plist
+        owner: root
+        group: wheel
+        mode: 0644
+      become: yes
+
+    - name: Add localunixsocket.local hostname in /etc/hosts
+      blockinfile:
+        dest: /etc/hosts
+        marker: "# {mark}: Kdev prevent docker for OSX from slowing in certain networks"
+        block: |
+          127.0.0.1 localunixsocket
+          127.0.0.1 localunixsocket.lan
+          127.0.0.1 localunixsocket.local
+      tags: [ 'hosts' ]
+      become: yes
+
+    - name: Start docker for mac
+      command: "open -a docker"
+
+    - name: "Check that we have /var/run/docker.sock socket"
+      wait_for:
+        path: /var/run/docker.sock
+        state: present
+        timeout: 20
+
+    - name: "Check that we have /var/run/docker.sock socket"
+      stat: path=/var/run/docker.sock
+      register: docker_socket
+
+    - name: Fail if no docker.sock
+      fail: msg="Check that Docker for Mac is enabled! /var/run/docker.sock is not mounted. :("
+      when: not docker_socket.stat.exists
+
+    - name: Start or reload kdev services
+      command: "{{ kdev_env_dir }}/bin/kdev service up --build --force-recreate"
+
+    - name: Wait for signaler to create CA file
+      wait_for:
+        path: "{{ kdev_user_files }}/ca/ca.crt"
+        state: present
+        timeout: 30
+
+    # This only works in OS X and doesn't affect firefox
+    # We want to use https locally and you only use ca.key which is generated to you
+    - name: Trust self-generated signaler Root certificate in keychain
+      shell: "security add-trusted-cert -d -r trustRoot -k '/Library/Keychains/System.keychain' ca.crt"
+      args:
+        chdir: "{{ kdev_user_files }}/ca/"
+      become: yes
+      become_method: sudo
+
+    - name: Create resolver directory
+      file: path=/etc/resolver state=directory mode=0755
+      become: yes
+      become_method: sudo
+      tags: ['dns']
+
+    - name: Delete resolver files to trigger dns change
+      file:
+        path: "/etc/resolver/{{item.domain}}"
+        state: absent
+      become: yes
+      become_method: sudo
+      with_items:
+        - { ip: "{{ kdev_docker_host_ip }}", domain: local }
+      tags: ['dns']
+
+    - name: Create dns resolver files at /etc/resolver/
+      template:
+        src: "templates/resolver-dev.conf.j2"
+        dest: "/etc/resolver/{{item.domain}}"
+        force: yes
+      become: yes
+      become_method: sudo
+      with_items:
+        - { ip: "{{ kdev_docker_host_ip }}", domain: local }
+      tags: ['dns']

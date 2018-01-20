@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+sudo apt-add-repository ppa:ansible/ansible -y
+sudo apt-get update
+
+#Install Ubuntu deps
+sudo apt install git curl ansible -y
+
+# This is fork from original
+REPO='alexsancho/kdev'
+
+# Returns 1 if not enough disk space
+# $1 disk space needed in gb
+free_disk_space() {
+  local needed_mb=$1
+  local available_mb=$(df -m / | tail -n 1 | xargs echo | cut -d' ' -f4)
+
+  echo "Available disk space: "$available_mb"mb"
+
+  if [ "$needed_mb" -ge "$available_mb" ]; then
+    return 1
+  else
+    return 0
+  fi
+}
+
+## Check available disk space in gigabytes
+if free_disk_space 5120; then
+  echo "CHECK: You have at least 5gb available space."
+else
+  echo "ERROR: You need to have 5gb available space."
+  exit
+fi
+
+# Check out a copy of this repo (first time only) ##
+KDEV_DIR=/usr/local/kdev-env/
+if [ -d "$KDEV_DIR" ]; then
+  echo "Updating pre-existing kdev repo..."
+  cd $KDEV_DIR
+  # Remove any local changes and update to origin
+  git reset HEAD --hard && git pull origin HEAD
+else
+  echo "Checking out kdev repo..."
+  sudo git clone https://github.com/$REPO.git $GDEV_DIR 2>/dev/null
+  sudo chmod -R og+rw $KDEV_DIR
+fi
+
+echo 'Handing Playbook to Ansible (will require your sudo password)...'
+echo -e "\n"
+# Continue with gdev setup
+ansible-playbook $KDEV_DIR/ansible/ubuntu/ubuntu.yml -i 127.0.0.1, --ask-become-pass -vvvv
+
+# Help user to debug usual problems
+echo "If this was your first time installing kdev, please restart your system now to make sure all software gets installed correctly ."
+echo "If you had any errors you can try reboot your machine and then running this again."

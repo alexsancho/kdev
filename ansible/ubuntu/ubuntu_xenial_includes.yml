@@ -1,0 +1,21 @@
+- name: Ensure that the dnsmasq directory exists
+      become: yes
+      become_method: sudo
+      file: path=/etc/NetworkManager/dnsmasq.d state=directory
+
+    - name: Create a custom resolver file under the dnsmasq directory
+      become: yes
+      become_method: sudo
+      template:
+        src: "{{ kdev_env_dir }}/ansible/ubuntu/ubuntu_dnsmasq.conf"
+        dest: "/etc/NetworkManager/dnsmasq.d/{{item.domain}}.conf"
+        force: yes
+      with_items:
+        - { ip: "{{ machine_ip }}", domain: test }
+
+    - name: Restart systemd-resolved
+      become: yes
+      become_method: sudo
+      service:
+        name: network-manager
+        state: restarted

@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+
+# We need at least ansible 2.0 for blockinfile directive
+ANSIBLE_NEEDED="2.0"
+
+# Only OS X yosemite and later support xhyve
+OSX_NEEDED="10.10.0"
+
+# This is fork from original
+REPO='alexsancho/kdev'
+
+# Returns 1 if upgrade is needed
+# $1 - SYSTEM VERSION
+# $2 - NEEDED VERSION
+update_needed () {
+    if [[ $1 == $2 ]]
+    then
+        return 0
+    fi
+    local IFS=.
+    local i ver1=($1) ver2=($2)
+    # fill empty fields in ver1 with zeros
+    for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
+    do
+        ver1[i]=0
+    done
+    for ((i=0; i<${#ver1[@]}; i++))
+    do
+        if [[ -z ${ver2[i]} ]]
+        then
+            # fill empty fields in ver2 with zeros
+            ver2[i]=0
+        fi
+        if ((10#${ver1[i]} > 10#${ver2[i]}))
+        then
+            return 1
+        fi
+        if ((10#${ver1[i]} < 10#${ver2[i]}))
+        then
+            return 0
+        fi
+    done
+    return 0
+}
+
+# Returns 1 if not enough disk space
+# $1 disk space needed in gb
+free_disk_space() {
+  local needed_gb=$1
+  local available_gb=$(df -g / | tail -n 1 | xargs echo | cut -d' ' -f4)
+
+  echo "Available disk space: "$available_gb"gb"
+
+  if [ "$needed_gb" -ge "$available_gb" ]; then
+    return 1
+  else
+    return 0
+  fi
+}
+
+# Check that OS X is current enough
+which -s sw_vers
+if [[ $? != 0 ]] ; then
+    echo "ERROR: This is only supported with OS X. What system are you using?"
+    exit 1
+else
+    echo "CHECK: Minimum OS-X version needed: $OSX_NEEDED"
+    OSX_VERSION=$(sw_vers -productVersion)
+    if update_needed $OSX_VERSION $OSX_NEEDED; then
+        echo "ERROR: You need to update your OS X, it is only $OSX_VERSION"
+        exit 1
+    else
+        echo "OK: OS X version is sufficient ($OSX_VERSION)..."
+    fi
+fi
+
+# Check if computer supports hypervisor framework
+echo "CHECK: hypervisor framework needs to be enabled in your computer"
+sysctl kern.hv_support
+if [[ $? != 0 ]] ; then
+    echo "ERROR: Your computer is too old to support xhyve"
+    exit 1
+fi
+
+## Install or Update Homebrew ##
+echo 'Installing or Updating Homebrew...'
+which -s brew
+if [[ $? != 0 ]] ; then
+    ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+else
+    brew update
+fi
+echo -e "\n\n"
+
+## Install or Update Ruby with Homebrew ##
+echo 'Installing or updating ruby with Homebrew...'
+if brew ls --versions myformula > /dev/null; then
+  brew upgrade ruby
+else
+  brew install ruby
+fi
+
+echo -e "\n\n"
+
+## Install or Update Ansible ##
+echo 'Installing or Updating Ansible...'
+which -s ansible-playbook
+if [[ $? != 0 ]] ; then
+  echo "ansible installation..."
+    brew install ansible
+else # Ansible needs to be at least 1.9
+  ANSIBLE_VERSION=$(ansible --version | grep ansible | cut -d " " -f 2)
+  if update_needed $ANSIBLE_VERSION $ANSIBLE_NEEDED; then
+    echo "Ansible is too old: $ANSIBLE_VERSION. We need >$ANSIBLE_NEEDED"
+    echo "Updating ansible through homebrew..."
+    brew upgrade ansible
+    brew link --overwrite ansible
+  else
+    echo "Ansible version is $ANSIBLE_VERSION. Update not needed..."
+  fi
+fi
+echo -e "\n\n"
+
+## Install Docker-Sync
+echo 'Installing Docker-Sync...'
+which -s docker-sync
+if [[ $? != 0 ]] ; then
+    gem install -n /usr/local/bin docker-sync
+else
+    gem update docker-sync
+fi
+echo -e "\n\n"
+
+## Check available disk space in gigabytes
+if free_disk_space 10; then
+  echo "CHECK: You have at least 10gb available space."
+else
+  echo "ERROR: You need to have 10gb available space."
+fi
+
+# Check out a copy of this repo (first time only) ##
+KDEV_DIR=/usr/local/kdev-env
+if [ -d "$KDEV_DIR" ]; then
+  echo "Updating pre-existing kdev repo..."
+  cd $KDEV_DIR
+  # Remove any local changes and update to origin
+  git reset HEAD --hard && git pull origin HEAD
+else
+  # On OSX Sierra /usr/local is not owned by admin user and we can't just clone over there
+  echo "Checking out kdev repo... ( This needs sudo permissions )"
+  sudo git clone https://github.com/$REPO.git $KDEV_DIR
+
+  # Check that kdev folder has right permissions
+  sudo chown -R $USER:$(id -gn) $KDEV_DIR
+fi
+
+echo 'Handing Playbook to Ansible (will require your sudo password)...'
+echo -e "\n"
+
+# Continue with kdev setup
+cd /usr/local/kdev-env/ansible/
+ansible-playbook mac.yml -i 127.0.0.1, --ask-become-pass -vvvv
+
+# Help user to debug usual problems
+echo "If you had any errors you can try reboot your machine and then running this again."

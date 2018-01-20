@@ -1,0 +1,56 @@
+version: '3'
+
+services:
+  ##
+  # NOTICE:
+  # env BOX_IP is defined only for gdev services
+  # This is the ip address of the VM which runs docker containers
+  ##
+
+  nginx:
+    # Use jwilder/nginx-proxy but with slight changes
+    build: nginx/
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      # Mount self signed https certificates for testing environment
+      - ${HOME}/.kdev/certs:/etc/nginx/certs:ro
+    network_mode: "bridge"
+    #restart: always
+  dnsmasq:
+    image: andyshinn/dnsmasq
+    ports:
+      - ${BOX_IP}:53:53/tcp
+      - ${BOX_IP}:53:53/udp
+    cap_add:
+      - NET_ADMIN
+    command: "--address=/local/${BOX_IP}"
+    restart: always
+    network_mode: "bridge"
+  mail:
+    image: mailhog/mailhog
+    environment:
+      # Use easier domain name for mailhog
+      VIRTUAL_HOST: mail.local
+      VIRTUAL_PORT: 8025
+    ports:
+      # Map mailhog into host machine port
+      # This port is used in production too
+      - 25:1025
+    restart: always
+    network_mode: "bridge"
+  signaler:
+    image: onnimonni/signaler
+    environment:
+      GENERATOR: "self-signed"
+    volumes:
+      # Mount .kdev folders to store certificates in
+      - ${HOME}/.kdev/certs:/data/certs
+      - ${HOME}/.kdev/ca:/data/ca
+
+      # Mount docker socket so that signaler can auto create certificates
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    restart: always
+    network_mode: "bridge"
