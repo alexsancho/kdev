@@ -313,9 +313,9 @@ HEREDOC
         puts `git clone git@github.com:alexsancho/wp-docker.git #{args['sitename']}`
         if args['theme']
           puts "Cloning theme from #{args['theme']}..."
-          puts `git clone #{args['theme']} #{args['sitename']}/web/app/themes/#{themename}`
+          puts `git clone #{args['theme']} #{args['sitename']}/web/wp-content/themes/#{themename}`
           puts "Removing .git directory from theme..."
-          `rm -rf #{args['sitename']}/web/app/themes/#{themename}/.git`
+          `rm -rf #{args['sitename']}/web/wp-content/themes/#{themename}/.git`
           puts ""
         else
           # TODO: get default theme url from ~/.kdev/kdevconf.yml
@@ -329,11 +329,11 @@ HEREDOC
           "#{args['sitename']}/.drone.yml",
           "#{args['sitename']}/config/application.php",
           "#{args['sitename']}/docker-compose.yml",
-          "#{args['sitename']}/web/app/themes/#{themename}/lib/extras.php",
-          "#{args['sitename']}/web/app/themes/#{themename}/lib/images.php",
-          "#{args['sitename']}/web/app/themes/#{themename}/lib/setup.php",
-          "#{args['sitename']}/web/app/themes/#{themename}/package.json",
-          "#{args['sitename']}/web/app/themes/#{themename}/style.css"
+          "#{args['sitename']}/web/wp-content/themes/#{themename}/lib/extras.php",
+          "#{args['sitename']}/web/wp-content/themes/#{themename}/lib/images.php",
+          "#{args['sitename']}/web/wp-content/themes/#{themename}/lib/setup.php",
+          "#{args['sitename']}/web/wp-content/themes/#{themename}/package.json",
+          "#{args['sitename']}/web/wp-content/themes/#{themename}/style.css"
         ]
 
         themename_file_names.each do |file_name|
@@ -364,8 +364,8 @@ HEREDOC
 
         puts "Replacing 'themename-textdomain' strings from all project files with '#{args['sitename'].downcase}-td'..."
         textdomain_file_names = [
-          "#{args['sitename']}/web/app/themes/#{themename}/lib/setup.php",
-          "#{args['sitename']}/web/app/themes/#{themename}/style.css"
+          "#{args['sitename']}/web/wp-content/themes/#{themename}/lib/setup.php",
+          "#{args['sitename']}/web/wp-content/themes/#{themename}/style.css"
         ]
         textdomain_file_names.each do |file_name|
           if File.exists?(file_name)
@@ -404,7 +404,7 @@ HEREDOC
         # install theme npm modules
         if args['npm_install']
           puts "Installing theme node modules..."
-          puts `cd #{args["sitename"]}/web/app/themes/#{themename}; npm install`
+          puts `cd #{args["sitename"]}/web/wp-content/themes/#{themename}; npm install`
           puts ""
         end
 
