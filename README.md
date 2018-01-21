@@ -34,19 +34,19 @@ It setups 4 service containers into your docker.
 ### Service Containers
 
 #### Nginx proxy
-This project uses excellent nginx proxy container from [jwilder/nginx-proxy](https://github.com/jwilder/nginx-proxy). This proxy reserver ports http/https ports from your localhost and proxies the requests to your project containers. Just provide `VIRTUAL_HOST=your-address.local` env in your projects `docker-compose.yml` and nginx proxy will take care of the rest.
+This project uses excellent nginx proxy container from [jwilder/nginx-proxy](https://github.com/jwilder/nginx-proxy). This proxy reserver ports http/https ports from your localhost and proxies the requests to your project containers. Just provide `VIRTUAL_HOST=your-address.test` env in your projects `docker-compose.yml` and nginx proxy will take care of the rest.
 
 #### Custom DNS server
 We want to use real addresses for all containers. Some applications have strange behaviour if they are just used from `localhost:8080`. We use [andyshinn/dnsmasq](https://github.com/andyshinn/dnsmasq) for local dnsmasq which always responds `127.0.0.1` to any request. Installation script adds custom resolver file for your machine:
 
 ```
-$ cat /etc/resolver/local
-domain local
+$ cat /etc/resolver/test
+domain test
 nameserver 127.0.0.1
 search_order 1
 ```
 
-This means that all `*.local` addresses are now pointing into your local machine so you don't have to edit `/etc/hosts` file ever again. We used `.local` tld because [it is reserved by IETF](https://en.wikipedia.org/wiki/.local) and will never be [sold to google](http://www.theregister.co.uk/2015/03/13/google_developer_gtld_domain_icann/) like what happened to it's popular cousin `.dev`.
+This means that all `*.test` addresses are now pointing into your local machine so you don't have to edit `/etc/hosts` file ever again. We used `.test` tld because [it is reserved by IETF](https://en.wikipedia.org/wiki/.test) and will never be [sold to google](http://www.theregister.co.uk/2015/03/13/google_developer_gtld_domain_icann/) like what happened to it's popular cousin `.dev`.
 
 #### Custom https certificate generator
 It's a really good practise to use https in production but only a few people use it in development. This makes it harder for people to notice `mixed content` error messages in development.

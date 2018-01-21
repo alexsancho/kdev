@@ -26,14 +26,14 @@ services:
       - ${BOX_IP}:53:53/udp
     cap_add:
       - NET_ADMIN
-    command: "--address=/local/${BOX_IP}"
+    command: "--address=/test/${BOX_IP}"
     restart: always
     network_mode: "bridge"
   mail:
     image: mailhog/mailhog
     environment:
       # Use easier domain name for mailhog
-      VIRTUAL_HOST: mail.local
+      VIRTUAL_HOST: mail.test
       VIRTUAL_PORT: 8025
     ports:
       # Map mailhog into host machine port

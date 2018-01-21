@@ -130,7 +130,7 @@
       become: yes
       become_method: sudo
       with_items:
-        - { ip: "{{ kdev_docker_host_ip }}", domain: local }
+        - { ip: "{{ kdev_docker_host_ip }}", domain: test }
       tags: ['dns']
 
     - name: Create dns resolver files at /etc/resolver/
@@ -141,5 +141,5 @@
       become: yes
       become_method: sudo
       with_items:
-        - { ip: "{{ kdev_docker_host_ip }}", domain: local }
+        - { ip: "{{ kdev_docker_host_ip }}", domain: test }
       tags: ['dns']
