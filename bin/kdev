@@ -393,6 +393,7 @@ HEREDOC
         wordpresstest_file_names = [
           "#{args['sitename']}/.drone.yml",
           "#{args['sitename']}/docker-compose.yml",
+          "#{args['sitename']}/docker-compose-ubuntu.yml",
           "#{args['sitename']}/scripts/seed.sh"
         ]
         wordpresstest_file_names.each do |file_name|
@@ -417,9 +418,16 @@ HEREDOC
         puts `cd #{args["sitename"]}; composer update`
 
         # install theme npm modules
+        if args['srdb_install']
+          puts "Installing Interconnectit Search Replace DB"
+          puts `cd #{args["sitename"]}/web/wp/; git clone https://github.com/interconnectit/Search-Replace-DB.git`
+          puts ""
+        end
+
+        # install theme npm modules
         if args['npm_install']
           puts "Installing theme node modules..."
-          puts `cd #{args["sitename"]}/web/wp-content/themes/#{themename}; npm install`
+          puts `cd #{args["sitename"]}/web/wp-content/themes/#{themename}; yarn install`
           puts ""
         end
 
@@ -513,6 +521,15 @@ HEREDOC
       end
       puts ""
     end
+    # Install Search Replace DB?
+    puts "Install Search Replace DB? (Y/N)"
+    srdb_install=gets.chomp
+    if ['Y','y'].include?(npm_install)
+      project['srdb_install']=true
+    else
+      project['srdb_install']=false
+    end
+    puts ""
     # run npm install in theme directory?
     # TODO: default value
     puts "Run npm install in theme directory after setup? (Y/N)"
