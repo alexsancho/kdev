@@ -324,15 +324,22 @@ HEREDOC
           `rm -rf #{args['sitename']}/web/wp-content/themes/#{themename}/.git`
           puts ""
         end
+
         # replace all THEMENAME (namespace) references from all files from this project to your project name
         puts "Replacing 'THEMENAME' strings from all project files with '#{args['sitename']}'..."
         themename_file_names = [
           "#{args['sitename']}/.drone.yml",
           "#{args['sitename']}/config/application.php",
           "#{args['sitename']}/docker-compose.yml",
+          "#{args['sitename']}/docker-compose-ubuntu.yml",
+          "#{args['sitename']}/web/wp-content/themes/#{themename}/index.php",
+          "#{args['sitename']}/web/wp-content/themes/#{themename}/header.php",
+          "#{args['sitename']}/web/wp-content/themes/#{themename}/footer.php",
           "#{args['sitename']}/web/wp-content/themes/#{themename}/lib/extras.php",
           "#{args['sitename']}/web/wp-content/themes/#{themename}/lib/images.php",
           "#{args['sitename']}/web/wp-content/themes/#{themename}/lib/setup.php",
+          "#{args['sitename']}/web/wp-content/themes/#{themename}/templates/post/content.php",
+          "#{args['sitename']}/web/wp-content/themes/#{themename}/templates/post/content-none.php",
           "#{args['sitename']}/web/wp-content/themes/#{themename}/package.json",
           "#{args['sitename']}/web/wp-content/themes/#{themename}/style.css"
         ]
@@ -351,10 +358,12 @@ HEREDOC
         projectname_file_names = [
           "#{args['sitename']}/docker-compose.yml"
         ]
+
         # Add one additional replace to the array.
         if RUBY_PLATFORM.include? "darwin"
           projectname_file_names.insert(-1, "#{args['sitename']}/docker-sync.yml")
         end
+
         projectname_file_names.each do |file_name|
           if File.exists?(file_name)
             text = File.read(file_name)
@@ -365,7 +374,12 @@ HEREDOC
 
         puts "Replacing 'themename-textdomain' strings from all project files with '#{args['sitename'].downcase}-td'..."
         textdomain_file_names = [
+          "#{args['sitename']}/web/wp-content/themes/#{themename}/index.php",
+          "#{args['sitename']}/web/wp-content/themes/#{themename}/header.php",
+          "#{args['sitename']}/web/wp-content/themes/#{themename}/footer.php",
           "#{args['sitename']}/web/wp-content/themes/#{themename}/lib/setup.php",
+          "#{args['sitename']}/web/wp-content/themes/#{themename}/templates/post/content.php",
+          "#{args['sitename']}/web/wp-content/themes/#{themename}/templates/post/content-none.php",
           "#{args['sitename']}/web/wp-content/themes/#{themename}/style.css"
         ]
         textdomain_file_names.each do |file_name|
