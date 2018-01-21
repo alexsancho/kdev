@@ -309,8 +309,8 @@ HEREDOC
       # check if project directory already exists
       unless Dir.exists?(args['sitename'])
         # clone wp-project from github
-        puts "Cloning wp-project from git@github.com:alexsancho/wp-project.git to #{args['sitename']}..."
-        puts `git clone git@github.com:alexsancho/wp-project.git #{args['sitename']}`
+        puts "Cloning wp-docker from git@github.com:alexsancho/wp-docker.git to #{args['sitename']}..."
+        puts `git clone git@github.com:alexsancho/wp-docker.git #{args['sitename']}`
         if args['theme']
           puts "Cloning theme from #{args['theme']}..."
           puts `git clone #{args['theme']} #{args['sitename']}/web/app/themes/#{themename}`

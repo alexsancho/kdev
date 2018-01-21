@@ -111,7 +111,7 @@ create:
   defaults:
     wordpress:
       smtp_host: "172.17.0.1"
-      theme: "git@github.com:alexsancho/wp-starter-dustpress-theme.git"
+      theme: "git@github.com:alexsancho/wp-starter-theme.git"
 ```
 
 ## Workflow
