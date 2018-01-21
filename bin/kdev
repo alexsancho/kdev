@@ -318,10 +318,11 @@ HEREDOC
           `rm -rf #{args['sitename']}/web/wp-content/themes/#{themename}/.git`
           puts ""
         else
-          # TODO: get default theme url from ~/.kdev/kdevconf.yml
-          # do not get theme if default is not set
-          puts "TODO"
-          puts "Cloning default theme if set ~/.kdev/kdevconf.yml"
+          puts "Cloning stater theme"
+          puts `git clone git@github.com:alexsancho/wp-starter-theme.git #{args['sitename']}/web/wp-content/themes/#{themename}`
+          puts "Removing .git directory from theme..."
+          `rm -rf #{args['sitename']}/web/wp-content/themes/#{themename}/.git`
+          puts ""
         end
         # replace all THEMENAME (namespace) references from all files from this project to your project name
         puts "Replacing 'THEMENAME' strings from all project files with '#{args['sitename']}'..."
