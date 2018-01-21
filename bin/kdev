@@ -27,11 +27,11 @@ Commands:
   rm                 Remove stopped containers
   run                Run a one-off command
   shell              Open shell inside container
-  service            Manage gdev services (nginx and dnsmasq, mail)
+  service            Manage kdev services (nginx and dnsmasq, mail)
   start              Start services
   stop               Stop services
   up                 Create and start containers
-  update             Update gdev environment
+  update             Update kdev environment
 HEREDOC
 
   PROXY_UNMODIFIED_TO_COMPOSE=%w{build kill logs ps pull restart rm start}
@@ -212,7 +212,7 @@ HEREDOC
     end
   end
 
-  # Syntactic sugar for: $ gdev ps
+  # Syntactic sugar for: $ kdev ps
   # I want this to look like vagrant binary
   def status(args)
     system("docker-compose ps")
@@ -418,7 +418,7 @@ HEREDOC
         end
         puts ""
 
-        # gdev up
+        # kdev up
         puts "Running kdev up..."
         puts `cd #{args["sitename"]}; kdev up`
         puts ""
