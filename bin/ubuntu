@@ -41,7 +41,7 @@ if [ -d "$KDEV_DIR" ]; then
   git reset HEAD --hard && git pull origin HEAD
 else
   echo "Checking out kdev repo..."
-  sudo git clone https://github.com/$REPO.git $GDEV_DIR 2>/dev/null
+  sudo git clone https://github.com/$REPO.git $KDEV_DIR 2>/dev/null
   sudo chmod -R og+rw $KDEV_DIR
 fi
 
