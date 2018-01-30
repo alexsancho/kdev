@@ -32,6 +32,8 @@ Commands:
   stop               Stop services
   up                 Create and start containers
   update             Update kdev environment
+  backupdb           Dump a database backup to shared directory
+  restoredb          Restore database from shared directory
 HEREDOC
 
   PROXY_UNMODIFIED_TO_COMPOSE=%w{build kill logs ps pull restart rm start}
@@ -216,6 +218,16 @@ HEREDOC
   # I want this to look like vagrant binary
   def status(args)
     system("docker-compose ps")
+  end
+
+  # dump a database backup to shared directory
+  def backupdb()
+    system("docker-compose exec wordpress /bin/bash 'wp db export /backup --allow-root'")
+  end
+
+  # restore database from shared directory
+  def restoredb()
+    system("docker-compose exec wordpress /bin/bash 'wp db import $(find /backup/*.sql | head -n 1) --allow-root'")
   end
 
   # Create new project command (validate arguments and start creating app or use wizard)
