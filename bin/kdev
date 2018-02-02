@@ -69,11 +69,6 @@ HEREDOC
   end
 
   def stop(args)
-    if RUBY_PLATFORM.include? "darwin"
-      # Stop Docker-Sync
-      system("docker-sync stop")
-    end
-
     args.unshift("docker-compose")
     system(args.join(" "))
   end
@@ -131,10 +126,6 @@ HEREDOC
 
   def up(args)
     service(["up"])
-    if RUBY_PLATFORM.include? "darwin"
-      # Start Docker-Sync
-      system("docker-sync start")
-    end
 
     args.insert(1, "-d")
     args.unshift("docker-compose")
@@ -370,11 +361,6 @@ HEREDOC
         projectname_file_names = [
           "#{args['sitename']}/docker-compose.yml"
         ]
-
-        # Add one additional replace to the array.
-        if RUBY_PLATFORM.include? "darwin"
-          projectname_file_names.insert(-1, "#{args['sitename']}/docker-sync.yml")
-        end
 
         projectname_file_names.each do |file_name|
           if File.exists?(file_name)
