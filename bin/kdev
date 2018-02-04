@@ -32,12 +32,13 @@ Commands:
   stop               Stop services
   up                 Create and start containers
   update             Update kdev environment
+  savedb             Save database for persistance
   backupdb           Dump a database backup to shared directory
   restoredb          Restore database from shared directory
 HEREDOC
 
   PROXY_UNMODIFIED_TO_COMPOSE=%w{build kill logs ps pull restart rm start}
-  PROXY_MODIFIED=%w{up run help stop}
+  PROXY_MODIFIED=%w{up run help stop savedb backupdb restoredb}
   OTHER_COMMANDS=%w{wait reload cleanup machine update service status shell exec create}
 
   CREATE_HELP='Usage: $ kdev create --type=wordpress --theme=ssh://git@domain:/theme.git --sitename=myapp --git=ssh://git@mydomain:/my-app.git'
@@ -212,17 +213,36 @@ HEREDOC
   end
 
   def savedb(args)
-    system("docker exec database sh -c 'exec mysqldump --all-databases -uroot -p\"#{args['password']}\"' > ./initdb/data.sql")
+    args_hash = Hash.new
+    args.each { |argument|
+      arg = argument.split('=')
+      # every argument has value, check for required args
+
+      # split argument to key value pair
+      key = arg[0]
+      val = arg[1]
+
+      # remove all dashes from beginning of key
+      key.sub! /\A-+/, ''
+
+      # set key and value to hash
+      args_hash[key]=val
+    }
+
+    container=`docker-compose ps -q db`.strip
+    system("docker exec -it #{container} sh -c 'exec mysqldump --all-databases -u#{args_hash['user']} -p#{args_hash['password']}' > ./.docker-sync/initdb/data.sql")
   end
 
   # dump a database backup to shared directory
-  def backupdb()
-    system("docker-compose exec wordpress /bin/bash 'wp db export /backup --allow-root'")
+  def backupdb(args)
+    container=`docker-compose ps -q web`.strip
+    system("docker exec -it #{container} bash 'wp db export /backup --allow-root'")
   end
 
   # restore database from shared directory
-  def restoredb()
-    system("docker-compose exec wordpress /bin/bash 'wp db import $(find /backup/*.sql | head -n 1) --allow-root'")
+  def restoredb(args)
+    container=`docker-compose ps -q web`.strip
+    system("docker exec -it #{container} bash 'wp db import $(find /backup/*.sql | head -n 1) --allow-root'")
   end
 
   # Create new project command (validate arguments and start creating app or use wizard)
