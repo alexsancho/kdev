@@ -211,6 +211,10 @@ HEREDOC
     system("docker-compose ps")
   end
 
+  def savedb(args)
+    system("docker exec database sh -c 'exec mysqldump --all-databases -uroot -p\"#{args['password']}\"' > ./initdb/data.sql")
+  end
+
   # dump a database backup to shared directory
   def backupdb()
     system("docker-compose exec wordpress /bin/bash 'wp db export /backup --allow-root'")
