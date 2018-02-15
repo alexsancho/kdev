@@ -236,13 +236,13 @@ HEREDOC
   # dump a database backup to shared directory
   def backupdb(args)
     container=`docker-compose ps -q web`.strip
-    system("docker exec -it #{container} sh -c 'wp db export /backup --allow-root'")
+    system("docker exec -it #{container} sh -c 'wp db export /var/www/backup --allow-root'")
   end
 
   # restore database from shared directory
   def restoredb(args)
     container=`docker-compose ps -q web`.strip
-    system("docker exec -it #{container} sh -c 'wp db import $(find /backup/*.sql | head -n 1) --allow-root'")
+    system("docker exec -it #{container} sh -c 'wp db import $(find /var/www/backup/*.sql | head -n 1) --allow-root'")
   end
 
   # Create new project command (validate arguments and start creating app or use wizard)
