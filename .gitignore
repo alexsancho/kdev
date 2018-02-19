@@ -1,3 +1,3 @@
-
 # Ignore ansible retry files
+.idea
 ansible/*.retry
