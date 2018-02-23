@@ -3,7 +3,7 @@ version: '3'
 services:
   ##
   # NOTICE:
-  # env BOX_IP is defined only for gdev services
+  # env BOX_IP is defined only for kdev services
   # This is the ip address of the VM which runs docker containers
   ##
 
