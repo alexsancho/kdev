@@ -62,13 +62,13 @@ and instead more of these:
 kdev includes custom certificate generator [onnimonni/signaler](https://github.com/onnimonni/signaler). kdev installer creates a self-signed unique ca certificate during installation and saves it in your system keychain. If you provide `HTTPS_HOST=your-address.test` env in your `docker-compose.yml` you will automatically have self-signed and trusted certificate for your development environment.
 
 #### Custom SMTP server for debugging email
-We included [mailhog/mailhog](https://hub.docker.com/r/mailhog/mailhog/) docker container for easier debugging of emails. Just use `172.17.0.1:25` as smtp server in your application and you are good to go.
+We included [mailhog/mailhog](https://hub.docker.com/r/mailhog/mailhog/) docker container for easier debugging of emails. Just use `127.0.0.1:25` as smtp server in your application and you are good to go.
 
 Or if your legacy application has hard coded email server you can use this trick in your `docker-compose.yml`:
 
 ```
 extra_hosts:
-    - "my-mail-server.com:172.17.0.1"
+    - "my-mail-server.com:127.0.0.1"
 ```
 
 and docker will add it into the `/etc/hosts` file inside the container automatically during startup.
@@ -110,7 +110,7 @@ Example kdevconf.yml:
 create:
   defaults:
     wordpress:
-      smtp_host: "172.17.0.1"
+      smtp_host: "127.0.0.1"
       theme: "git@github.com:alexsancho/wp-starter-theme.git"
 ```
 

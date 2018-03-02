@@ -193,7 +193,7 @@ HEREDOC
 
     #If linux, set ip, otherwise assume user is on mac os x
     if RUBY_PLATFORM.include? "linux"
-      box_ip="172.17.0.1"
+      box_ip="127.0.0.1"
     else
       box_ip="10.254.254.254"
     end

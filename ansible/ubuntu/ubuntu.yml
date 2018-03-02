@@ -5,7 +5,7 @@
   vars:
     kdev_env_dir: "/usr/local/kdev-env"
     kdev_user_files: "{{ansible_env.HOME}}/.kdev"
-    machine_ip: 172.17.0.1
+    machine_ip: 127.0.0.1
     compose_version: 1.15.0
 
   tasks:
