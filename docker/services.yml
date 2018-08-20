@@ -27,7 +27,7 @@ services:
       # Map mailhog into host machine port
       # This port is used in production too
       - 25:1025
-      - 8025:8025
+      - 80:8025
     restart: always
     network_mode: "bridge"
   signaler:
