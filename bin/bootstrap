@@ -74,6 +74,11 @@ else
     fi
 fi
 
+if [[ $EUID -eq 0 ]]; then
+  echo "This script must NOT be run with sudo/root. Please re-run without sudo." 1>&2
+  exit 1
+fi
+
 # Check if computer supports hypervisor framework
 echo "CHECK: hypervisor framework needs to be enabled in your computer"
 sysctl kern.hv_support
@@ -121,22 +126,15 @@ else # Ansible needs to be at least 1.9
 fi
 echo -e "\n\n"
 
-## Install Docker-Sync
-echo 'Installing Docker-Sync...'
-which -s docker-sync
-if [[ $? != 0 ]] ; then
-    gem install -n /usr/local/bin docker-sync
-else
-    gem update docker-sync
-fi
-echo -e "\n\n"
-
 ## Check available disk space in gigabytes
 if free_disk_space 10; then
   echo "CHECK: You have at least 10gb available space."
 else
   echo "ERROR: You need to have 10gb available space."
 fi
+
+echo "Setup native NFS for Docker"
+
 
 # Check out a copy of this repo (first time only) ##
 KDEV_DIR=/usr/local/kdev-env
@@ -160,6 +158,60 @@ echo -e "\n"
 # Continue with kdev setup
 cd /usr/local/kdev-env/ansible/
 ansible-playbook mac.yml -i 127.0.0.1, --ask-become-pass -vvvv
+
+
+echo ""
+echo " +-----------------------------+"
+echo " | Setup native NFS for Docker |"
+echo " +-----------------------------+"
+echo ""
+
+echo "WARNING: This script will shut down running containers."
+echo ""
+echo -n "Do you wish to proceed? [y]: "
+read decision
+
+if [ "$decision" != "y" ]; then
+  echo "Exiting. No changes made."
+  exit 1
+fi
+
+echo ""
+
+if ! docker ps > /dev/null 2>&1 ; then
+  echo "== Waiting for docker to start..."
+fi
+
+open -a Docker
+
+while ! docker ps > /dev/null 2>&1 ; do sleep 2; done
+
+echo "== Stopping running docker containers..."
+docker-compose down > /dev/null 2>&1
+docker volume prune -f > /dev/null
+
+osascript -e 'quit app "Docker"'
+
+echo "== Setting up nfs..."
+LINE="/Users -alldirs -mapall=$U:$G localhost"
+FILE=/etc/exports
+sudo cp /dev/null $FILE
+grep -qF -- "$LINE" "$FILE" || sudo echo "$LINE" | sudo tee -a $FILE > /dev/null
+
+LINE="nfs.server.mount.require_resv_port = 0"
+FILE=/etc/nfs.conf
+grep -qF -- "$LINE" "$FILE" || sudo echo "$LINE" | sudo tee -a $FILE > /dev/null
+
+echo "== Restarting nfsd..."
+sudo nfsd restart
+
+echo "== Restarting docker..."
+open -a Docker
+
+while ! docker ps > /dev/null 2>&1 ; do sleep 2; done
+
+echo ""
+echo "SUCCESS! Now go run your containers 🐳"
 
 # Help user to debug usual problems
 echo "If you had any errors you can try reboot your machine and then running this again."
