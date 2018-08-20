@@ -229,7 +229,7 @@ HEREDOC
     }
 
     container=`docker-compose ps -q db`.strip
-    system("docker exec -it #{container} sh -c 'exec mysqldump --all-databases -u#{args_hash['user']} -p#{args_hash['password']}' > ./database/data.sql")
+    system("docker exec -it #{container} sh -c 'exec mysqldump --all-databases -u#{args_hash['user']} -p#{args_hash['password']}' > ./database/dump.sql")
   end
 
   # dump a database backup to shared directory
