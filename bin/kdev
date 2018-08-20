@@ -340,35 +340,34 @@ HEREDOC
         puts `git clone git@github.com:alexsancho/wp-docker.git #{args['sitename']}`
         if args['theme']
           puts "Cloning theme from #{args['theme']}..."
-          puts `git clone #{args['theme']} #{args['sitename']}/web/app/themes/#{themename}`
+          puts `git clone #{args['theme']} #{args['sitename']}/code/web/app/themes/#{themename}`
           puts "Removing .git directory from theme..."
-          `rm -rf #{args['sitename']}/web/app/themes/#{themename}/.git`
+          `rm -rf #{args['sitename']}/code/web/app/themes/#{themename}/.git`
           puts ""
         else
           puts "Cloning stater theme"
-          puts `git clone git@github.com:alexsancho/wp-starter-theme.git #{args['sitename']}/web/app/themes/#{themename}`
+          puts `git clone git@github.com:alexsancho/wp-starter-theme.git #{args['sitename']}/code/web/app/themes/#{themename}`
           puts "Removing .git directory from theme..."
-          `rm -rf #{args['sitename']}/web/app/themes/#{themename}/.git`
+          `rm -rf #{args['sitename']}/code/web/app/themes/#{themename}/.git`
           puts ""
         end
 
         # replace all THEMENAME (namespace) references from all files from this project to your project name
         puts "Replacing 'THEMENAME' strings from all project files with '#{args['sitename']}'..."
         themename_file_names = [
-          "#{args['sitename']}/.drone.yml",
-          "#{args['sitename']}/config/application.php",
+          "#{args['sitename']}/code/config/application.php",
           "#{args['sitename']}/docker-compose.yml",
           "#{args['sitename']}/docker-compose-ubuntu.yml",
-          "#{args['sitename']}/web/app/themes/#{themename}/index.php",
-          "#{args['sitename']}/web/app/themes/#{themename}/header.php",
-          "#{args['sitename']}/web/app/themes/#{themename}/footer.php",
-          "#{args['sitename']}/web/app/themes/#{themename}/lib/extras.php",
-          "#{args['sitename']}/web/app/themes/#{themename}/lib/images.php",
-          "#{args['sitename']}/web/app/themes/#{themename}/lib/setup.php",
-          "#{args['sitename']}/web/app/themes/#{themename}/templates/post/content.php",
-          "#{args['sitename']}/web/app/themes/#{themename}/templates/post/content-none.php",
-          "#{args['sitename']}/web/app/themes/#{themename}/package.json",
-          "#{args['sitename']}/web/app/themes/#{themename}/style.css"
+          "#{args['sitename']}/code/web/app/themes/#{themename}/index.php",
+          "#{args['sitename']}/code/web/app/themes/#{themename}/header.php",
+          "#{args['sitename']}/code/web/app/themes/#{themename}/footer.php",
+          "#{args['sitename']}/code/web/app/themes/#{themename}/lib/extras.php",
+          "#{args['sitename']}/code/web/app/themes/#{themename}/lib/images.php",
+          "#{args['sitename']}/code/web/app/themes/#{themename}/lib/setup.php",
+          "#{args['sitename']}/code/web/app/themes/#{themename}/templates/post/content.php",
+          "#{args['sitename']}/code/web/app/themes/#{themename}/templates/post/content-none.php",
+          "#{args['sitename']}/code/web/app/themes/#{themename}/package.json",
+          "#{args['sitename']}/code/web/app/themes/#{themename}/style.css"
         ]
 
         themename_file_names.each do |file_name|
@@ -396,13 +395,13 @@ HEREDOC
 
         puts "Replacing 'themename-textdomain' strings from all project files with '#{args['sitename'].downcase}-td'..."
         textdomain_file_names = [
-          "#{args['sitename']}/web/app/themes/#{themename}/index.php",
-          "#{args['sitename']}/web/app/themes/#{themename}/header.php",
-          "#{args['sitename']}/web/app/themes/#{themename}/footer.php",
-          "#{args['sitename']}/web/app/themes/#{themename}/lib/setup.php",
-          "#{args['sitename']}/web/app/themes/#{themename}/templates/post/content.php",
-          "#{args['sitename']}/web/app/themes/#{themename}/templates/post/content-none.php",
-          "#{args['sitename']}/web/app/themes/#{themename}/style.css"
+          "#{args['sitename']}/code/web/app/themes/#{themename}/index.php",
+          "#{args['sitename']}/code/web/app/themes/#{themename}/header.php",
+          "#{args['sitename']}/code/web/app/themes/#{themename}/footer.php",
+          "#{args['sitename']}/code/web/app/themes/#{themename}/lib/setup.php",
+          "#{args['sitename']}/code/web/app/themes/#{themename}/templates/post/content.php",
+          "#{args['sitename']}/code/web/app/themes/#{themename}/templates/post/content-none.php",
+          "#{args['sitename']}/code/web/app/themes/#{themename}/style.css"
         ]
         textdomain_file_names.each do |file_name|
           if File.exists?(file_name)
@@ -440,14 +439,14 @@ HEREDOC
         # install theme npm modules
         if args['srdb_install']
           puts "Installing Interconnectit Search Replace DB"
-          puts `cd #{args["sitename"]}/web/wp/; git clone https://github.com/interconnectit/Search-Replace-DB.git`
+          puts `cd #{args["sitename"]}/code/web/wp/; git clone https://github.com/interconnectit/Search-Replace-DB.git`
           puts ""
         end
 
         # install theme npm modules
         if args['npm_install']
           puts "Installing theme node modules..."
-          puts `cd #{args["sitename"]}/web/app/themes/#{themename}; yarn install`
+          puts `cd #{args["sitename"]}/code/web/app/themes/#{themename}; yarn install`
           puts ""
         end
 
