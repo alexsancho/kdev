@@ -230,7 +230,7 @@ HEREDOC
     }
 
     container=`docker-compose ps -q db`.strip
-    system("docker exec -it #{container} sh -c 'exec mysqldump --all-databases -u#{args_hash['user']} -p#{args_hash['password']}' > ./.docker-sync/initdb/data.sql")
+    system("docker exec -it #{container} sh -c 'exec mysqldump --all-databases -u#{args_hash['user']} -p#{args_hash['password']}' > ./database/data.sql")
   end
 
   # dump a database backup to shared directory
@@ -340,15 +340,15 @@ HEREDOC
         puts `git clone git@github.com:alexsancho/wp-docker.git #{args['sitename']}`
         if args['theme']
           puts "Cloning theme from #{args['theme']}..."
-          puts `git clone #{args['theme']} #{args['sitename']}/web/wp-content/themes/#{themename}`
+          puts `git clone #{args['theme']} #{args['sitename']}/web/app/themes/#{themename}`
           puts "Removing .git directory from theme..."
-          `rm -rf #{args['sitename']}/web/wp-content/themes/#{themename}/.git`
+          `rm -rf #{args['sitename']}/web/app/themes/#{themename}/.git`
           puts ""
         else
           puts "Cloning stater theme"
-          puts `git clone git@github.com:alexsancho/wp-starter-theme.git #{args['sitename']}/web/wp-content/themes/#{themename}`
+          puts `git clone git@github.com:alexsancho/wp-starter-theme.git #{args['sitename']}/web/app/themes/#{themename}`
           puts "Removing .git directory from theme..."
-          `rm -rf #{args['sitename']}/web/wp-content/themes/#{themename}/.git`
+          `rm -rf #{args['sitename']}/web/app/themes/#{themename}/.git`
           puts ""
         end
 
@@ -359,16 +359,16 @@ HEREDOC
           "#{args['sitename']}/config/application.php",
           "#{args['sitename']}/docker-compose.yml",
           "#{args['sitename']}/docker-compose-ubuntu.yml",
-          "#{args['sitename']}/web/wp-content/themes/#{themename}/index.php",
-          "#{args['sitename']}/web/wp-content/themes/#{themename}/header.php",
-          "#{args['sitename']}/web/wp-content/themes/#{themename}/footer.php",
-          "#{args['sitename']}/web/wp-content/themes/#{themename}/lib/extras.php",
-          "#{args['sitename']}/web/wp-content/themes/#{themename}/lib/images.php",
-          "#{args['sitename']}/web/wp-content/themes/#{themename}/lib/setup.php",
-          "#{args['sitename']}/web/wp-content/themes/#{themename}/templates/post/content.php",
-          "#{args['sitename']}/web/wp-content/themes/#{themename}/templates/post/content-none.php",
-          "#{args['sitename']}/web/wp-content/themes/#{themename}/package.json",
-          "#{args['sitename']}/web/wp-content/themes/#{themename}/style.css"
+          "#{args['sitename']}/web/app/themes/#{themename}/index.php",
+          "#{args['sitename']}/web/app/themes/#{themename}/header.php",
+          "#{args['sitename']}/web/app/themes/#{themename}/footer.php",
+          "#{args['sitename']}/web/app/themes/#{themename}/lib/extras.php",
+          "#{args['sitename']}/web/app/themes/#{themename}/lib/images.php",
+          "#{args['sitename']}/web/app/themes/#{themename}/lib/setup.php",
+          "#{args['sitename']}/web/app/themes/#{themename}/templates/post/content.php",
+          "#{args['sitename']}/web/app/themes/#{themename}/templates/post/content-none.php",
+          "#{args['sitename']}/web/app/themes/#{themename}/package.json",
+          "#{args['sitename']}/web/app/themes/#{themename}/style.css"
         ]
 
         themename_file_names.each do |file_name|
@@ -396,13 +396,13 @@ HEREDOC
 
         puts "Replacing 'themename-textdomain' strings from all project files with '#{args['sitename'].downcase}-td'..."
         textdomain_file_names = [
-          "#{args['sitename']}/web/wp-content/themes/#{themename}/index.php",
-          "#{args['sitename']}/web/wp-content/themes/#{themename}/header.php",
-          "#{args['sitename']}/web/wp-content/themes/#{themename}/footer.php",
-          "#{args['sitename']}/web/wp-content/themes/#{themename}/lib/setup.php",
-          "#{args['sitename']}/web/wp-content/themes/#{themename}/templates/post/content.php",
-          "#{args['sitename']}/web/wp-content/themes/#{themename}/templates/post/content-none.php",
-          "#{args['sitename']}/web/wp-content/themes/#{themename}/style.css"
+          "#{args['sitename']}/web/app/themes/#{themename}/index.php",
+          "#{args['sitename']}/web/app/themes/#{themename}/header.php",
+          "#{args['sitename']}/web/app/themes/#{themename}/footer.php",
+          "#{args['sitename']}/web/app/themes/#{themename}/lib/setup.php",
+          "#{args['sitename']}/web/app/themes/#{themename}/templates/post/content.php",
+          "#{args['sitename']}/web/app/themes/#{themename}/templates/post/content-none.php",
+          "#{args['sitename']}/web/app/themes/#{themename}/style.css"
         ]
         textdomain_file_names.each do |file_name|
           if File.exists?(file_name)
@@ -413,10 +413,8 @@ HEREDOC
         end
         puts "Replacing 'wordpress.test' strings from all project files with '#{args['sitename'].downcase}.test'..."
         wordpresstest_file_names = [
-          "#{args['sitename']}/.drone.yml",
           "#{args['sitename']}/docker-compose.yml",
           "#{args['sitename']}/docker-compose-ubuntu.yml",
-          "#{args['sitename']}/scripts/seed.sh"
         ]
         wordpresstest_file_names.each do |file_name|
           if File.exists?(file_name)
@@ -449,7 +447,7 @@ HEREDOC
         # install theme npm modules
         if args['npm_install']
           puts "Installing theme node modules..."
-          puts `cd #{args["sitename"]}/web/wp-content/themes/#{themename}; yarn install`
+          puts `cd #{args["sitename"]}/web/app/themes/#{themename}; yarn install`
           puts ""
         end
 
@@ -467,16 +465,6 @@ HEREDOC
         puts "Running kdev up..."
         puts `cd #{args["sitename"]}; kdev up`
         puts ""
-
-        # running seed
-        if args['run_seed']
-          puts "Waiting for 10 seconds to be sure that docker instances are up and running..."
-          sleep(10)
-          puts ""
-          puts "Running seed (Installing WordPress)..."
-          puts `cd #{args["sitename"]}; kdev exec scripts/seed.sh`
-          puts ""
-        end
 
         puts "Point your browser to https://#{args['sitename'].downcase}.test/wp-admin and log in"
       else
@@ -560,15 +548,6 @@ HEREDOC
       project['npm_install']=true
     else
       project['npm_install']=false
-    end
-    puts ""
-    # run seed after setup?
-    puts "Run seed after installation? (Y/N)"
-    run_seed=gets.chomp
-    if ['Y','y'].include?(run_seed)
-      project['run_seed']=true
-    else
-      project['run_seed']=false
     end
     puts ""
 

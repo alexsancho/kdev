@@ -7,18 +7,6 @@ services:
   # This is the ip address of the VM which runs docker containers
   ##
 
-  nginx:
-    # Use jwilder/nginx-proxy but with slight changes
-    build: nginx/
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /var/run/docker.sock:/tmp/docker.sock:ro
-      # Mount self signed https certificates for testing environment
-      - ${HOME}/.kdev/certs:/etc/nginx/certs:ro
-    network_mode: "bridge"
-    #restart: always
   dnsmasq:
     image: andyshinn/dnsmasq
     ports:
