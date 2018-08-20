@@ -27,7 +27,7 @@ Commands:
   rm                 Remove stopped containers
   run                Run a one-off command
   shell              Open shell inside container
-  service            Manage kdev services (nginx and dnsmasq, mail)
+  service            Manage kdev services (dnsmasq, mail)
   start              Start services
   stop               Stop services
   up                 Create and start containers
@@ -171,7 +171,6 @@ HEREDOC
       end
       # Rebuild and reload all services
       puts "Refreshing all kdev services..."
-      service(['build nginx'])
       service(['reload'])
 
     else
