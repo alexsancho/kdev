@@ -133,9 +133,6 @@ else
   echo "ERROR: You need to have 10gb available space."
 fi
 
-echo "Setup native NFS for Docker"
-
-
 # Check out a copy of this repo (first time only) ##
 KDEV_DIR=/usr/local/kdev-env
 if [ -d "$KDEV_DIR" ]; then
@@ -158,60 +155,6 @@ echo -e "\n"
 # Continue with kdev setup
 cd /usr/local/kdev-env/ansible/
 ansible-playbook mac.yml -i 127.0.0.1, --ask-become-pass -vvvv
-
-
-echo ""
-echo " +-----------------------------+"
-echo " | Setup native NFS for Docker |"
-echo " +-----------------------------+"
-echo ""
-
-echo "WARNING: This script will shut down running containers."
-echo ""
-echo -n "Do you wish to proceed? [y]: "
-read decision
-
-if [ "$decision" != "y" ]; then
-  echo "Exiting. No changes made."
-  exit 1
-fi
-
-echo ""
-
-if ! docker ps > /dev/null 2>&1 ; then
-  echo "== Waiting for docker to start..."
-fi
-
-open -a Docker
-
-while ! docker ps > /dev/null 2>&1 ; do sleep 2; done
-
-echo "== Stopping running docker containers..."
-docker-compose down > /dev/null 2>&1
-docker volume prune -f > /dev/null
-
-osascript -e 'quit app "Docker"'
-
-echo "== Setting up nfs..."
-LINE="/Users -alldirs -mapall=$U:$G localhost"
-FILE=/etc/exports
-sudo cp /dev/null $FILE
-grep -qF -- "$LINE" "$FILE" || sudo echo "$LINE" | sudo tee -a $FILE > /dev/null
-
-LINE="nfs.server.mount.require_resv_port = 0"
-FILE=/etc/nfs.conf
-grep -qF -- "$LINE" "$FILE" || sudo echo "$LINE" | sudo tee -a $FILE > /dev/null
-
-echo "== Restarting nfsd..."
-sudo nfsd restart
-
-echo "== Restarting docker..."
-open -a Docker
-
-while ! docker ps > /dev/null 2>&1 ; do sleep 2; done
-
-echo ""
-echo "SUCCESS! Now go run your containers 🐳"
 
 # Help user to debug usual problems
 echo "If you had any errors you can try reboot your machine and then running this again."
