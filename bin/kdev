@@ -335,8 +335,8 @@ HEREDOC
       # check if project directory already exists
       unless Dir.exists?(args['sitename'])
         # clone wp-project from github
-        puts "Cloning wp-docker from git@github.com:alexsancho/wp-docker.git to #{args['sitename']}..."
-        puts `git clone git@github.com:alexsancho/wp-docker.git #{args['sitename']}`
+        puts "Cloning wp-docker from https://github.com/alexsancho/wp-docker.git to #{args['sitename']}..."
+        puts `git clone https://github.com/alexsancho/wp-docker.git #{args['sitename']}`
         if args['theme']
           puts "Cloning theme from #{args['theme']}..."
           puts `git clone #{args['theme']} #{args['sitename']}/code/web/app/themes/#{themename}`
@@ -345,7 +345,7 @@ HEREDOC
           puts ""
         else
           puts "Cloning stater theme"
-          puts `git clone git@github.com:alexsancho/wp-starter-theme.git #{args['sitename']}/code/web/app/themes/#{themename}`
+          puts `git clone https://github.com/alexsancho/wordpress-starter.git #{args['sitename']}/code/web/app/themes/#{themename}`
           puts "Removing .git directory from theme..."
           `rm -rf #{args['sitename']}/code/web/app/themes/#{themename}/.git`
           puts ""
@@ -455,7 +455,7 @@ HEREDOC
           puts `cd #{args["sitename"]}; git remote rm origin`
         else
           puts "Changing git remote to #{args['git']}..."
-          puts `cd #{args["sitename"]}; git remote add-url origin #{args["git"]}`
+          puts `cd #{args["sitename"]}; git remote set-url origin #{args["git"]}`
         end
         puts ""
 
