@@ -532,7 +532,7 @@ HEREDOC
     # Install Search Replace DB?
     puts "Install Search Replace DB? (Y/N)"
     srdb_install=gets.chomp
-    if ['Y','y'].include?(npm_install)
+    if ['Y','y'].include?(srdb_install)
       project['srdb_install']=true
     else
       project['srdb_install']=false
