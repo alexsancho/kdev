@@ -450,12 +450,12 @@ HEREDOC
         end
 
         # set git repository
-        if args['git'] == ""
-          puts "NO GIT REPOSITORY GIVEN!"
-          puts `cd #{args["sitename"]}; git remote rm origin`
-        else
+        if args['git']
           puts "Changing git remote to #{args['git']}..."
           puts `cd #{args["sitename"]}; git remote set-url origin #{args["git"]}`
+        else
+          puts "NO GIT REPOSITORY GIVEN!"
+          puts `cd #{args["sitename"]}; git remote rm origin`
         end
         puts ""
 
