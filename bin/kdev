@@ -337,44 +337,65 @@ HEREDOC
         # clone wp-project from github
         puts "Cloning wp-docker from https://github.com/alexsancho/wp-docker.git to #{args['sitename']}..."
         puts `git clone https://github.com/alexsancho/wp-docker.git #{args['sitename']}`
+
         if args['theme']
-          puts "Cloning theme from #{args['theme']}..."
-          puts `git clone #{args['theme']} #{args['sitename']}/code/web/app/themes/#{themename}`
-          puts "Removing .git directory from theme..."
-          `rm -rf #{args['sitename']}/code/web/app/themes/#{themename}/.git`
-          puts ""
-        else
-          puts "Cloning stater theme"
-          puts `git clone https://github.com/alexsancho/wp-starter-theme.git #{args['sitename']}/code/web/app/themes/#{themename}`
-          puts "Removing .git directory from theme..."
-          `rm -rf #{args['sitename']}/code/web/app/themes/#{themename}/.git`
-          puts ""
-        end
+          if args['theme'] === 'starter'
+            puts "Cloning stater theme"
+            puts `git clone https://github.com/alexsancho/wp-starter-theme.git #{args['sitename']}/code/web/app/themes/#{themename}`
+            puts "Removing .git directory from theme..."
+            `rm -rf #{args['sitename']}/code/web/app/themes/#{themename}/.git`
+            puts ""
 
-        # replace all THEMENAME (namespace) references from all files from this project to your project name
-        puts "Replacing 'THEMENAME' strings from all project files with '#{args['sitename']}'..."
-        themename_file_names = [
-          "#{args['sitename']}/code/config/application.php",
-          "#{args['sitename']}/docker-compose.yml",
-          "#{args['sitename']}/docker-compose-ubuntu.yml",
-          "#{args['sitename']}/code/web/app/themes/#{themename}/index.php",
-          "#{args['sitename']}/code/web/app/themes/#{themename}/header.php",
-          "#{args['sitename']}/code/web/app/themes/#{themename}/footer.php",
-          "#{args['sitename']}/code/web/app/themes/#{themename}/lib/extras.php",
-          "#{args['sitename']}/code/web/app/themes/#{themename}/lib/images.php",
-          "#{args['sitename']}/code/web/app/themes/#{themename}/lib/setup.php",
-          "#{args['sitename']}/code/web/app/themes/#{themename}/templates/post/content.php",
-          "#{args['sitename']}/code/web/app/themes/#{themename}/templates/post/content-none.php",
-          "#{args['sitename']}/code/web/app/themes/#{themename}/package.json",
-          "#{args['sitename']}/code/web/app/themes/#{themename}/style.css"
-        ]
+            # replace all THEMENAME (namespace) references from all files from this project to your project name
+            puts "Replacing 'THEMENAME' strings from all project files with '#{args['sitename']}'..."
+            themename_file_names = [
+              "#{args['sitename']}/code/config/application.php",
+              "#{args['sitename']}/docker-compose.yml",
+              "#{args['sitename']}/docker-compose-ubuntu.yml",
+              "#{args['sitename']}/code/web/app/themes/#{themename}/index.php",
+              "#{args['sitename']}/code/web/app/themes/#{themename}/header.php",
+              "#{args['sitename']}/code/web/app/themes/#{themename}/footer.php",
+              "#{args['sitename']}/code/web/app/themes/#{themename}/lib/extras.php",
+              "#{args['sitename']}/code/web/app/themes/#{themename}/lib/images.php",
+              "#{args['sitename']}/code/web/app/themes/#{themename}/lib/setup.php",
+              "#{args['sitename']}/code/web/app/themes/#{themename}/templates/post/content.php",
+              "#{args['sitename']}/code/web/app/themes/#{themename}/templates/post/content-none.php",
+              "#{args['sitename']}/code/web/app/themes/#{themename}/package.json",
+              "#{args['sitename']}/code/web/app/themes/#{themename}/style.css"
+            ]
 
-        themename_file_names.each do |file_name|
-          if File.exists?(file_name)
-            text = File.read(file_name)
-            # remove dashes from namespace strings
-            new_contents = text.gsub(/THEMENAME/, "#{args['sitename'].tr('-','')}")
-            File.open(file_name, "w") {|file| file.puts new_contents }
+            themename_file_names.each do |file_name|
+              if File.exists?(file_name)
+                text = File.read(file_name)
+                # remove dashes from namespace strings
+                new_contents = text.gsub(/THEMENAME/, "#{args['sitename'].tr('-','')}")
+                File.open(file_name, "w") {|file| file.puts new_contents }
+              end
+            end
+
+            puts "Replacing 'themename-textdomain' strings from all project files with '#{args['sitename'].downcase}-td'..."
+            textdomain_file_names = [
+              "#{args['sitename']}/code/web/app/themes/#{themename}/index.php",
+              "#{args['sitename']}/code/web/app/themes/#{themename}/header.php",
+              "#{args['sitename']}/code/web/app/themes/#{themename}/footer.php",
+              "#{args['sitename']}/code/web/app/themes/#{themename}/lib/setup.php",
+              "#{args['sitename']}/code/web/app/themes/#{themename}/templates/post/content.php",
+              "#{args['sitename']}/code/web/app/themes/#{themename}/templates/post/content-none.php",
+              "#{args['sitename']}/code/web/app/themes/#{themename}/style.css"
+            ]
+            textdomain_file_names.each do |file_name|
+              if File.exists?(file_name)
+                text = File.read(file_name)
+                new_contents = text.gsub(/themename-textdomain/, "#{args['sitename'].downcase}-td")
+                File.open(file_name, "w") {|file| file.puts new_contents }
+              end
+            end
+          else
+            puts "Cloning theme from #{args['theme']}..."
+            puts `git clone #{args['theme']} #{args['sitename']}/code/web/app/themes/#{themename}`
+            puts "Removing .git directory from theme..."
+            `rm -rf #{args['sitename']}/code/web/app/themes/#{themename}/.git`
+            puts ""
           end
         end
 
@@ -392,23 +413,6 @@ HEREDOC
           end
         end
 
-        puts "Replacing 'themename-textdomain' strings from all project files with '#{args['sitename'].downcase}-td'..."
-        textdomain_file_names = [
-          "#{args['sitename']}/code/web/app/themes/#{themename}/index.php",
-          "#{args['sitename']}/code/web/app/themes/#{themename}/header.php",
-          "#{args['sitename']}/code/web/app/themes/#{themename}/footer.php",
-          "#{args['sitename']}/code/web/app/themes/#{themename}/lib/setup.php",
-          "#{args['sitename']}/code/web/app/themes/#{themename}/templates/post/content.php",
-          "#{args['sitename']}/code/web/app/themes/#{themename}/templates/post/content-none.php",
-          "#{args['sitename']}/code/web/app/themes/#{themename}/style.css"
-        ]
-        textdomain_file_names.each do |file_name|
-          if File.exists?(file_name)
-            text = File.read(file_name)
-            new_contents = text.gsub(/themename-textdomain/, "#{args['sitename'].downcase}-td")
-            File.open(file_name, "w") {|file| file.puts new_contents }
-          end
-        end
         puts "Replacing 'wordpress.test' strings from all project files with '#{args['sitename'].downcase}.test'..."
         wordpresstest_file_names = [
           "#{args['sitename']}/docker-compose.yml",
