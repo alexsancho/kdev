@@ -338,7 +338,7 @@ HEREDOC
         puts "Cloning wp-docker from https://github.com/alexsancho/wp-docker.git to #{args['sitename']}..."
         puts `git clone https://github.com/alexsancho/wp-docker.git #{args['sitename']}`
 
-        if args['theme'] != ''
+        if args['theme'].present?
           if args['theme'] === 'starter'
             puts "Cloning stater theme"
             puts `git clone https://github.com/alexsancho/wp-starter-theme.git #{args['sitename']}/code/web/app/themes/#{themename}`
@@ -454,7 +454,7 @@ HEREDOC
         end
 
         # set git repository
-        if args['git'] != ''
+        if args['git'].present?
           puts "Changing git remote to #{args['git']}..."
           puts `cd #{args["sitename"]}; git remote set-url origin #{args["git"]}`
         else
@@ -526,10 +526,12 @@ HEREDOC
       else
         puts "Theme repository address (git@domain/theme.git):"
       end
-      project['theme']=gets.chomp
-      if project['theme'] == '' and defaults['theme']
+      theme=gets.chomp
+      if theme == '' and defaults['theme']
         project['theme']=defaults['theme']
         puts defaults['theme']
+      elsif theme != ''
+        project['theme']=theme
       end
       puts ""
     end
