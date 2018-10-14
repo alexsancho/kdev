@@ -338,7 +338,7 @@ HEREDOC
         puts "Cloning wp-docker from https://github.com/alexsancho/wp-docker.git to #{args['sitename']}..."
         puts `git clone https://github.com/alexsancho/wp-docker.git #{args['sitename']}`
 
-        if args['theme'].present?
+        if args['theme']
           if args['theme'] === 'starter'
             puts "Cloning stater theme"
             puts `git clone https://github.com/alexsancho/wp-starter-theme.git #{args['sitename']}/code/web/app/themes/#{themename}`
@@ -454,7 +454,7 @@ HEREDOC
         end
 
         # set git repository
-        if args['git'].present?
+        if args['git']
           puts "Changing git remote to #{args['git']}..."
           puts `cd #{args["sitename"]}; git remote set-url origin #{args["git"]}`
         else
@@ -527,6 +527,7 @@ HEREDOC
         puts "Theme repository address (git@domain/theme.git):"
       end
       theme=gets.chomp
+      project['theme']=false
       if theme == '' and defaults['theme']
         project['theme']=defaults['theme']
         puts defaults['theme']
@@ -538,25 +539,24 @@ HEREDOC
     # Install Search Replace DB?
     puts "Install Search Replace DB? (Y/N)"
     srdb_install=gets.chomp
+    project['srdb_install']=false
     if ['Y','y'].include?(srdb_install)
       project['srdb_install']=true
-    else
-      project['srdb_install']=false
     end
     puts ""
     # run npm install in theme directory?
     # TODO: default value
     puts "Run npm install in theme directory after setup? (Y/N)"
     npm_install=gets.chomp
+    project['npm_install']=false
     if ['Y','y'].include?(npm_install)
       project['npm_install']=true
-    else
-      project['npm_install']=false
     end
     puts ""
 
     puts "Project git repository, ssh or https (ssh://git@domain/my-app.git):"
     git=gets.chomp
+    project['git']=false
     if git != ''
       project['git']=git
     end
