@@ -338,7 +338,7 @@ HEREDOC
         puts "Cloning wp-docker from https://github.com/alexsancho/wp-docker.git to #{args['sitename']}..."
         puts `git clone https://github.com/alexsancho/wp-docker.git #{args['sitename']}`
 
-        if args['theme']
+        if args['theme'] != ''
           if args['theme'] === 'starter'
             puts "Cloning stater theme"
             puts `git clone https://github.com/alexsancho/wp-starter-theme.git #{args['sitename']}/code/web/app/themes/#{themename}`
