@@ -446,7 +446,7 @@ HEREDOC
           puts ""
         end
 
-        # install theme npm modules
+        # install theme node modules
         if args['npm_install']
           puts "Installing theme node modules..."
           puts `cd #{args["sitename"]}/code/web/app/themes/#{themename}; yarn install`
@@ -555,8 +555,8 @@ HEREDOC
 
     puts "Project git repository, ssh or https (ssh://git@domain/my-app.git):"
     git=gets.chomp
-    if (git)
-      project['git']=gets.chomp
+    if git != ''
+      project['git']=git
     end
 
     puts ""
