@@ -345,7 +345,7 @@ HEREDOC
           puts ""
         else
           puts "Cloning stater theme"
-          puts `git clone https://github.com/alexsancho/wordpress-starter-theme.git #{args['sitename']}/code/web/app/themes/#{themename}`
+          puts `git clone https://github.com/alexsancho/wp-starter-theme.git #{args['sitename']}/code/web/app/themes/#{themename}`
           puts "Removing .git directory from theme..."
           `rm -rf #{args['sitename']}/code/web/app/themes/#{themename}/.git`
           puts ""
