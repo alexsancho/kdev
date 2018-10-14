@@ -433,7 +433,7 @@ HEREDOC
         #puts "Running composer install..."
         #puts `cd #{args["sitename"]}; composer install`
         puts "Running composer update..."
-        puts `cd #{args["sitename"]}; composer update`
+        puts `cd #{args["sitename"]}/code/; composer update`
 
         # install theme npm modules
         if args['srdb_install']
