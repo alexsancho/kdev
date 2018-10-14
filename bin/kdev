@@ -431,7 +431,7 @@ HEREDOC
 
         # composer install
         puts "Running composer install..."
-        puts `cd #{args["sitename"]}/code/; composer install`
+        puts `cd #{args["sitename"]}/code/; composer install --ignore-platform-reqs`
         #puts "Running composer update..."
         #puts `cd #{args["sitename"]}/code/; composer update`
 
