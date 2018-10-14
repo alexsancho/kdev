@@ -461,6 +461,7 @@ HEREDOC
 
         # kdev up
         puts "Running kdev up..."
+        puts `cd #{args["sitename"]}/code/; cp .env.example .env`
         puts `cd #{args["sitename"]}; kdev up`
         puts ""
 
