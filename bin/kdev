@@ -526,7 +526,6 @@ HEREDOC
       if project['theme'] == '' and defaults['theme']
         project['theme']=defaults['theme']
         puts defaults['theme']
-      else
       end
       puts ""
     end
@@ -551,7 +550,10 @@ HEREDOC
     puts ""
 
     puts "Project git repository, ssh or https (ssh://git@domain/my-app.git):"
-    project['git']=gets.chomp
+    git=gets.chomp
+    if (git)
+      project['git']=gets.chomp
+    end
 
     puts ""
     puts "------------------------= Confirm input =------------------------"
