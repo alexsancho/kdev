@@ -495,9 +495,11 @@ HEREDOC
     #puts "Running composer update..."
     #puts `cd #{args["sitename"]}/code/; composer update`
 
-    #install default theme
-    puts "Installing Smart theme"
-    puts `cd #{args["sitename"]}/code/;php console vendor:publish --tag=smart --force`
+    if args['type'] === 'smart'
+      #install default theme
+      puts "Installing Smart theme"
+      puts `cd #{args["sitename"]}/code/;php console vendor:publish --tag=smart --force`
+    end
 
     # install theme npm modules
     if args['srdb_install']
