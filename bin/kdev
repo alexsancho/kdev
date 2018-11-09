@@ -499,7 +499,7 @@ HEREDOC
 
     # set environment
     puts `cd #{args["sitename"]}/code/; cp .env.example .env`
-    replace_content([ "#{args['sitename']}/code/.env" ], /smart.test/, "#{args['sitename'].downcase}.test")
+    replace_content([ "#{args['sitename']}/code/.env", "#{args['sitename']}/code/config/app.php" ], /smart.test/, "#{args['sitename'].downcase}.test")
 
     if args['type'] === 'smart'
       #install default theme
