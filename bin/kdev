@@ -349,7 +349,7 @@ HEREDOC
           end
         end
 
-        install_packages(args)
+        install_packages(args, themename)
 
       else
         puts "Directory "+args['sitename'].downcase+" exists, please use another sitename."
@@ -460,7 +460,7 @@ HEREDOC
 
         # TODO: Add all people working in the project into authors section of composer.json and rename the project alexsancho/wp-docker->alexsancho/client in composer.json
 
-        install_packages(args)
+        install_packages(args, themename)
       else
         puts "Directory "+args['sitename'].downcase+" exists, please use another sitename."
         puts CREATE_HELP
