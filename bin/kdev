@@ -341,15 +341,10 @@ HEREDOC
           "#{args['sitename']}/docker-compose.yml",
           "#{args['sitename']}/docker-compose-ubuntu.yml",
         ]
-        smarttest_file_names.each do |file_name|
-          if File.exists?(file_name)
-            text = File.read(file_name)
-            new_contents = text.gsub(/smart.test/, "#{args['sitename'].downcase}.test")
-            File.open(file_name, "w") {|file| file.puts new_contents }
-          end
-        end
 
-        install_packages(args, themename)
+        replace_content(smarttest_file_names, /smart.test/, "#{args['sitename'].downcase}.test")
+
+        install_packages(args)
 
       else
         puts "Directory "+args['sitename'].downcase+" exists, please use another sitename."
@@ -390,15 +385,7 @@ HEREDOC
               "#{args['sitename']}/code/web/app/themes/#{themename}/package.json",
               "#{args['sitename']}/code/web/app/themes/#{themename}/style.css"
             ]
-
-            themename_file_names.each do |file_name|
-              if File.exists?(file_name)
-                text = File.read(file_name)
-                # remove dashes from namespace strings
-                new_contents = text.gsub(/THEMENAME/, "#{args['sitename'].tr('-','')}")
-                File.open(file_name, "w") {|file| file.puts new_contents }
-              end
-            end
+            replace_content(themename_file_names, /THEMENAME/, "#{args['sitename'].tr('-','')}")
 
             puts "Replacing 'themename-textdomain' strings from all project files with '#{args['sitename'].downcase}-td'..."
             textdomain_file_names = [
@@ -410,13 +397,7 @@ HEREDOC
               "#{args['sitename']}/code/web/app/themes/#{themename}/templates/post/content-none.php",
               "#{args['sitename']}/code/web/app/themes/#{themename}/style.css"
             ]
-            textdomain_file_names.each do |file_name|
-              if File.exists?(file_name)
-                text = File.read(file_name)
-                new_contents = text.gsub(/themename-textdomain/, "#{args['sitename'].downcase}-td")
-                File.open(file_name, "w") {|file| file.puts new_contents }
-              end
-            end
+            replace_content(textdomain_file_names, /themename-textdomain/, "#{args['sitename'].downcase}-td")
           else
             puts "Cloning theme from #{args['theme']}..."
             puts `git clone #{args['theme']} #{args['sitename']}/code/web/app/themes/#{themename}`
@@ -431,27 +412,14 @@ HEREDOC
         projectname_file_names = [
           "#{args['sitename']}/docker-compose.yml"
         ]
-
-        projectname_file_names.each do |file_name|
-          if File.exists?(file_name)
-            text = File.read(file_name)
-            new_contents = text.gsub(/PROJECTNAME/, "#{args['sitename']}")
-            File.open(file_name, "w") {|file| file.puts new_contents }
-          end
-        end
+        replace_content(projectname_file_names, /PROJECTNAME/, "#{args['sitename']}")
 
         puts "Replacing 'wordpress.test' strings from all project files with '#{args['sitename'].downcase}.test'..."
         wordpresstest_file_names = [
           "#{args['sitename']}/docker-compose.yml",
           "#{args['sitename']}/docker-compose-ubuntu.yml",
         ]
-        wordpresstest_file_names.each do |file_name|
-          if File.exists?(file_name)
-            text = File.read(file_name)
-            new_contents = text.gsub(/wordpress.test/, "#{args['sitename'].downcase}.test")
-            File.open(file_name, "w") {|file| file.puts new_contents }
-          end
-        end
+        replace_content(wordpresstest_file_names, /wordpress.test/, "#{args['sitename'].downcase}.test")
 
         # change project test address in docker-compose.yml for example wordpress.test -> client-name.test
         #docker_compose = File.read("#{args['sitename']}/docker-compose.yml")
@@ -460,7 +428,7 @@ HEREDOC
 
         # TODO: Add all people working in the project into authors section of composer.json and rename the project alexsancho/wp-docker->alexsancho/client in composer.json
 
-        install_packages(args, themename)
+        install_packages(args)
       else
         puts "Directory "+args['sitename'].downcase+" exists, please use another sitename."
         puts CREATE_HELP
@@ -488,7 +456,17 @@ HEREDOC
     return defaults
   end
 
-  def install_packages(args, themename)
+  def replace_content(files, regexp, replacement)
+    files.each do |file_name|
+      if File.exists?(file_name)
+        text = File.read(file_name)
+        new_contents = text.gsub(regexp, replacement)
+        File.open(file_name, "w") {|file| file.puts new_contents }
+      end
+    end
+  end
+
+  def install_packages(args)
     # composer install
     puts "Running composer install..."
     puts `cd #{args["sitename"]}/code/; composer install --ignore-platform-reqs`
@@ -521,11 +499,12 @@ HEREDOC
 
     # set environment
     puts `cd #{args["sitename"]}/code/; cp .env.example .env`
+    replace_content([ "#{args['sitename']}/code/.env" ], /smart.test/, "#{args['sitename'].downcase}.test")
 
     if args['type'] === 'smart'
       #install default theme
       puts "Installing Smart theme"
-      puts `cd #{args["sitename"]}/code/;php console vendor:publish --tag=smart --force;php console theme:install --name=#{themename}`
+      puts `cd #{args["sitename"]}/code/;php console vendor:publish --tag=smart --force;php console theme:install --name=#{args['sitename'].tr('-','')}`
     end
 
     # kdev up
