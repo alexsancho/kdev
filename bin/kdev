@@ -488,7 +488,7 @@ HEREDOC
     return defaults
   end
 
-  def install_packages(args)
+  def install_packages(args, themename)
     # composer install
     puts "Running composer install..."
     puts `cd #{args["sitename"]}/code/; composer install --ignore-platform-reqs`
