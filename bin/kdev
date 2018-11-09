@@ -330,6 +330,33 @@ HEREDOC
     themename=args['sitename'].tr('-','');
 
     case args['type']
+    when "smart"
+      unless Dir.exists?(args['sitename'])
+        # clone wp-project from github
+        puts "Cloning smart-docker from https://github.com/alexsancho/smart-docker.git to #{args['sitename']}..."
+        puts `git clone https://github.com/alexsancho/smart-docker.git #{args['sitename']}`
+
+        puts "Replacing 'smart.test' strings from all project files with '#{args['sitename'].downcase}.test'..."
+        smarttest_file_names = [
+          "#{args['sitename']}/docker-compose.yml",
+          "#{args['sitename']}/docker-compose-ubuntu.yml",
+        ]
+        smarttest_file_names.each do |file_name|
+          if File.exists?(file_name)
+            text = File.read(file_name)
+            new_contents = text.gsub(/smart.test/, "#{args['sitename'].downcase}.test")
+            File.open(file_name, "w") {|file| file.puts new_contents }
+          end
+        end
+
+        install_packages(args)
+
+      else
+        puts "Directory "+args['sitename'].downcase+" exists, please use another sitename."
+        puts CREATE_HELP
+
+        exit
+      end
     when "wordpress"
       # setup wordpress project
       # check if project directory already exists
@@ -433,43 +460,7 @@ HEREDOC
 
         # TODO: Add all people working in the project into authors section of composer.json and rename the project alexsancho/wp-docker->alexsancho/client in composer.json
 
-        # composer install
-        puts "Running composer install..."
-        puts `cd #{args["sitename"]}/code/; composer install --ignore-platform-reqs`
-        #puts "Running composer update..."
-        #puts `cd #{args["sitename"]}/code/; composer update`
-
-        # install theme npm modules
-        if args['srdb_install']
-          puts "Installing Interconnectit Search Replace DB"
-          puts `cd #{args["sitename"]}/code/web/; git clone https://github.com/interconnectit/Search-Replace-DB.git`
-          puts ""
-        end
-
-        # install theme node modules
-        if args['npm_install']
-          puts "Installing theme node modules..."
-          puts `cd #{args["sitename"]}/code/web/app/themes/#{themename}; yarn install`
-          puts ""
-        end
-
-        # set git repository
-        if args['git']
-          puts "Changing git remote to #{args['git']}..."
-          puts `cd #{args["sitename"]}; git remote set-url origin #{args["git"]}`
-        else
-          puts "NO GIT REPOSITORY GIVEN!"
-          puts `cd #{args["sitename"]}; git remote rm origin`
-        end
-        puts ""
-
-        # kdev up
-        puts "Running kdev up..."
-        puts `cd #{args["sitename"]}/code/; cp .env.example .env`
-        puts `cd #{args["sitename"]}; kdev up`
-        puts ""
-
-        puts "Point your browser to https://#{args['sitename'].downcase}.test/wp-admin and log in"
+        install_packages(args)
       else
         puts "Directory "+args['sitename'].downcase+" exists, please use another sitename."
         puts CREATE_HELP
@@ -495,6 +486,46 @@ HEREDOC
       defaults = config['create']['defaults'][type]
     end
     return defaults
+  end
+
+  def install_packages(args)
+    # composer install
+    puts "Running composer install..."
+    puts `cd #{args["sitename"]}/code/; composer install --ignore-platform-reqs`
+    #puts "Running composer update..."
+    #puts `cd #{args["sitename"]}/code/; composer update`
+
+    # install theme npm modules
+    if args['srdb_install']
+      puts "Installing Interconnectit Search Replace DB"
+      puts `cd #{args["sitename"]}/code/web/; git clone https://github.com/interconnectit/Search-Replace-DB.git`
+      puts ""
+    end
+
+    # install theme node modules
+    if args['npm_install']
+      puts "Installing theme node modules..."
+      puts `cd #{args["sitename"]}/code/web/app/themes/#{themename}; yarn install`
+      puts ""
+    end
+
+    # set git repository
+    if args['git']
+      puts "Changing git remote to #{args['git']}..."
+      puts `cd #{args["sitename"]}; git remote set-url origin #{args["git"]}`
+    else
+      puts "NO GIT REPOSITORY GIVEN!"
+      puts `cd #{args["sitename"]}; git remote rm origin`
+    end
+    puts ""
+
+    # kdev up
+    puts "Running kdev up..."
+    puts `cd #{args["sitename"]}/code/; cp .env.example .env`
+    puts `cd #{args["sitename"]}; kdev up`
+    puts ""
+
+    puts "Point your browser to https://#{args['sitename'].downcase}.test/wp-admin and log in"
   end
 
   def create_wizard()
