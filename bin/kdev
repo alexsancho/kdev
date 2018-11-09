@@ -495,12 +495,6 @@ HEREDOC
     #puts "Running composer update..."
     #puts `cd #{args["sitename"]}/code/; composer update`
 
-    if args['type'] === 'smart'
-      #install default theme
-      puts "Installing Smart theme"
-      puts `cd #{args["sitename"]}/code/;php console vendor:publish --tag=smart --force`
-    end
-
     # install theme npm modules
     if args['srdb_install']
       puts "Installing Interconnectit Search Replace DB"
@@ -528,6 +522,11 @@ HEREDOC
     # kdev up
     puts "Running kdev up..."
     puts `cd #{args["sitename"]}/code/; cp .env.example .env`
+    if args['type'] === 'smart'
+      #install default theme
+      puts "Installing Smart theme"
+      puts `cd #{args["sitename"]}/code/;php console vendor:publish --tag=smart --force`
+    end
     puts `cd #{args["sitename"]}; kdev up`
     puts ""
 
