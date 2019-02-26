@@ -30,7 +30,7 @@
       apt_repository:
         repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ansible_distribution_release}} stable"
         state: present
-      when: ansible_distribution_release != 'sonya'
+      when: ansible_distribution_release != 'sonya' and ansible_distribution_release != 'linuxmint'
 
     - name: "Add Docker repository"
       become: yes
@@ -39,6 +39,14 @@
         repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable"
         state: present
       when: ansible_distribution_release == 'sonya'
+
+    - name: "Add Docker repository"
+      become: yes
+      become_method: sudo
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
+        state: present
+      when: ansible_distribution_release == 'linuxmint'
 
     - name: Install Docker
       become: yes

@@ -504,7 +504,7 @@ HEREDOC
     if args['type'] === 'smart'
       #install default theme
       puts "Installing Smart theme"
-      puts `cd #{args["sitename"]}/code/;php console vendor:publish --tag=smart --force;php console theme:install --name=#{args['sitename'].tr('-','')}`
+      puts `cd #{args["sitename"]}/code/;php console theme:install --name=#{args['sitename'].tr('-','')};php console vendor:publish --tag=smart --force`
     end
 
     # kdev up
