@@ -44,7 +44,7 @@ services:
     restart: always
     network_mode: "bridge"
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:latest
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.3.2
     volumes:
       # Make elasticsearch persistent
       - /usr/share/elasticsearch/data
@@ -57,7 +57,7 @@ services:
     network_mode: "bridge"
     container_name: elasticsearch
   logstash:
-    image: docker.elastic.co/logstash/logstash-oss:latest
+    image: docker.elastic.co/logstash/logstash-oss:6.3.2
     volumes:
       - ${HOME}/.kdev/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
       - ${HOME}/.kdev/logstash/pipeline:/usr/share/logstash/pipeline:ro
@@ -69,7 +69,7 @@ services:
     depends_on:
       - elasticsearch
   kibana:
-    image: docker.elastic.co/kibana/kibana-oss:latest
+    image: docker.elastic.co/kibana/kibana-oss:6.3.2
     volumes:
       - ${HOME}/.kdev/kibana/config/:/usr/share/kibana/config:ro
     ports:
