@@ -37,7 +37,7 @@ Commands:
   restoredb          Restore database from shared directory
 HEREDOC
 
-  PROXY_UNMODIFIED_TO_COMPOSE=%w{build kill logs ps pull restart rm start}
+  PROXY_UNMODIFIED_TO_COMPOSE=%w{build kill logs ps pull restart rm start pause unpause}
   PROXY_MODIFIED=%w{up run help stop savedb backupdb restoredb}
   OTHER_COMMANDS=%w{wait reload cleanup machine update service status shell exec create}
 

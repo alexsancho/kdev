@@ -51,6 +51,13 @@
       # If this was somehow root owned make sure it's not anymore
       become: yes
 
+    - name: Copy docker configuration files
+      copy:
+        src: "{{ item }}"
+        dest: "{{ansible_env.HOME}}/.kdev"
+      with_fileglob:
+        - docker/*
+
     - name: Symlink kdev bin to PATH
       file:
         src: "{{kdev_env_dir}}/bin/kdev"

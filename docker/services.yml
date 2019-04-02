@@ -43,3 +43,38 @@ services:
       - /var/run/docker.sock:/tmp/docker.sock:ro
     restart: always
     network_mode: "bridge"
+  elasticsearch:
+    image: elasticsearch/elasticsearch-oss:latest
+    env_file: code/.env
+    volumes:
+      # Make elasticsearch persistent
+      - /usr/share/elasticsearch/data
+      - ${HOME}/.kdev/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+    network_mode: "bridge"
+    container_name: elasticsearch
+  logstash:
+    image: logstash/logstash-oss:latest
+    volumes:
+      - ${HOME}/.kdev/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ${HOME}/.kdev/logstash/pipeline:/usr/share/logstash/pipeline:ro
+    ports:
+      - "5000:5000"
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+    network_mode: "bridge"
+    depends_on:
+      - elasticsearch
+  kibana:
+    image: kibana/kibana-oss:latest
+    volumes:
+      - ${HOME}/.kdev/kibana/config/:/usr/share/kibana/config:ro
+    ports:
+      - "5601:5601"
+    network_mode: "bridge"
+    depends_on:
+      - elasticsearch

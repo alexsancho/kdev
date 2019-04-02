@@ -73,6 +73,13 @@
       become: yes
       become_method: sudo
 
+    - name: Copy docker configuration files
+      copy:
+        src: "{{ item }}"
+        dest: "{{ansible_env.HOME}}/.kdev"
+      with_fileglob:
+        - docker/*
+
     - name: Symlink kdev bin to PATH
       become: yes
       become_method: sudo
