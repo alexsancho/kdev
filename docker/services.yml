@@ -45,7 +45,6 @@ services:
     network_mode: "bridge"
   elasticsearch:
     image: elasticsearch/elasticsearch-oss:latest
-    env_file: code/.env
     volumes:
       # Make elasticsearch persistent
       - /usr/share/elasticsearch/data
