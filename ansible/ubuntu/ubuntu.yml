@@ -75,7 +75,7 @@
 
     - name: Copy docker configuration files
       copy:
-        src: "docker/"
+        src: "../docker/"
         dest: "{{ansible_env.HOME}}/.kdev"
 
     - name: Symlink kdev bin to PATH
